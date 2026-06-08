@@ -1,71 +1,87 @@
-# Gelecek Oturum İçin İlk Mesaj
+# Gelecek Oturum Icin Ilk Mesaj
 
-Bu dosya, MilCAM üzerinde yeni bir Claude Code oturumuna başlarken kullanılacak
-yönlendirme şablonudur.
-
----
-
-## Önerilen ilk komut
+## Onerilen Ilk Okumalar
 
 ```
 Read .ai/START_HERE.md
 Read .ai/context.yaml
 Read .ai/WORKPLAN.md
+Read .ai/ARCHITECTURE.md
 Read .ai/ENGINEERING_LOG.md
-Read .ai/VEC_VE_TARGET.md
 ```
 
-## Sonraki Beklenen Adım (2026-06-08 itibarıyla)
+## Sonraki Beklenen Adim (2026-06-08 itibariyle)
 
-**Faz 0.5 — VEC-VE Hardware Reality Check.** Cihaza SSH ile bağlanıp şu
-komutları çalıştır, çıktıyı `ENGINEERING_LOG.md` altına bir log entry olarak
-yapıştır:
+**Faz 1 — Ilk End-to-End Build Denemesi.**
 
 ```bash
-uname -a
-cat /proc/cpuinfo | grep -E "model name|Hardware|Features" | sort -u
-free -h
-df -h / /root
-glxinfo 2>/dev/null | grep -E "OpenGL (version|renderer)"
-ps auxf | head -40
-ls /opt/codesys/ /etc/codesys* 2>/dev/null
-which wmctrl xdotool
+cd /home/embed/Dev/MilCAM
+cmake --preset default      # FreeCAD'i wrap eden CMake'i çalistir
+cmake --build build -j$(nproc)
 ```
 
-Çıktıya göre Plan A / B / C arasında karar ver:
-- RAM >= 2 GB + OpenGL 2.0+ → Plan A (MilCAM cihazda)
-- RAM 1-2 GB → Slim profili, riskler değerlendir
-- RAM < 1 GB veya GL yok → Plan C (MilCAM workstation'da, cihaz drop receiver)
+Beklenen pürüzler (`.ai/ENGINEERING_LOG.md` "Beklenen Hata Listesi"
+bolumunden):
+- `add_subdirectory(${FREECAD_SOURCE_DIR})` FreeCAD CMake varsayimlariyla
+  cakisabilir. Belirti: `Could not find configure_file` benzeri.
+- `BUILD_<X>=OFF` flag'leri bazi inter-module link hatasina sebep olabilir.
+- Eksik sistem paketleri (Coin3D, OCCT, Boost, Xerces, Qt5/6 Quick Controls).
 
-## Eğer kullanıcı "build et" derse
+Eger build basariliysa:
+```bash
+DESTDIR=$PWD/_inst cmake --install build
+DISPLAY=:0 QT_QPA_PLATFORM=xcb _inst/usr/local/bin/FreeCAD
+```
 
-Henüz **end-to-end build doğrulanmadı**. İlk derlemede çıkması muhtemel
-problemler (ENGINEERING_LOG.md "Doldurulacak konular" bölümünden):
-- `Qt6 VirtualKeyboard` paketi eksik olabilir.
-- FreeCAD Material/Part'ın Sketcher olmadan derleneceği doğrulanmadı.
-- OCCT DataExchange component'ı eksik olabilir.
+Acilan FreeCAD'in workbench picker'inda **sadece** MilCAM + CAM + Part +
+Sketcher + PartDesign + Draft + Mesh + Spreadsheet gozukmeli. FEM/BIM/
+TechDraw/Robot YOK.
 
-Bunları sırayla çöz — root cause ara, sembolik link veya hack yapma.
+## Eger Kullanici "MilCAM ic tasarimini degistirmek istiyorum" derse
 
-## Eğer kullanıcı "ImportFacade'i wire et" derse
+| Istek                                  | Nereyi degistir                                  |
+|----------------------------------------|--------------------------------------------------|
+| "Bir buton ekle"                       | `milcam/Mod/MilCAM/Commands/<Yeni>.py`           |
+| "G-code formatini degistir"             | `milcam/Mod/MilCAM/PostProcessor/codesys_post.py`|
+| "Hangi workbench'ler gozuksun?"         | `milcam/Mod/MilCAM/InitGui.py` `keep` set       |
+| "Bir FreeCAD modulu daha gerek"         | `CMakeLists.txt` `BUILD_<X>` flag'ini ON yap     |
+| "Font/ikon boyutu"                      | `Mod/MilCAM/InitGui.py` `Activated()`           |
+| "Drop folder default'u degissin"        | `CodesysBridge::Impl::dropFolder` (C++)         |
+| "OPC UA sembol adi degissin"            | `.ai/CODESYS_BRIDGE.md` + Faz 4 implementasyon  |
 
-Şu sırayla:
-1. `freecad/Mod/Part/App/Import.h` ve `ImportStep.cpp` API'sini incele.
-2. `adapter/src/ImportFacade.cpp` stub'unu STEP path'i için doldur.
-3. `CamGeometrySource`'a TopoShape geç.
-4. `tests/test_import_step.cpp` yaz — küçük bir STEP dosyası test'i.
-5. UI'da `Q_EMIT importFinished` sinyalini dinleyen QML kısmı ekle.
+## Eger Kullanici "FreeCAD UI'sini istemiyorum, yeni bir UI olsun" derse
 
-## Eğer kullanıcı "OPC UA bağla" derse
+DUR. Bunu derseler proje yon degistiriyor demektir. Tartisip kullanici ile
+dogrula:
+- CADNC mimarisine geri mi donmek istiyorlar?
+- MilCAM iptal edilip CADNC mi gelistirilsin?
 
-Bu Faz 3. Önce Faz 0.5 ve Faz 2 tamamlanmış olmalı. Hangi sembollerin
-PLC tarafında açıldığını **kullanıcıdan yazılı al** — sözlü onaylama
-sembol isim değişikliklerini yakalamaz.
+Yeni UI yazimi `.ai/START_HERE.md` "Kritik Kurallar 1" maddesi ile celiskili.
+Kullanici acik direktif vermeden bu yola **gitme**.
 
-## Kritik Bilgi
+## Eger Kullanici "Workbench overlay hizla iter etmek istiyorum" derse
 
-- Kullanıcı: Türkçe konuş.
-- Kod ve yorumlar: İngilizce.
-- CAM modülünde değişiklik yaparsan → CADNC'ye de portla.
-- `freecad/` altında değişiklik yapma — sadece okuma.
-- Donanım denenmemişken büyük tahminler yapma.
+Overlay-only preset:
+
+```bash
+cmake --preset overlay-only
+cmake --build build-overlay
+sudo cmake --install build-overlay
+# (Mod/MilCAM /usr/share/freecad/Mod/MilCAM'e gider)
+freecad                              # sistem freecad ile test
+```
+
+Tek build cikar (`CodesysBridge.so`), Python kod copy edilir.
+
+## Eger Kullanici "Cihaza deploy et" derse
+
+Bu Faz 5. Once Faz 1-2-3-4 sirayla tamamlanmis olmali. Cihaz erisimi (SSH,
+parola) icin user'a sor — production credentials .ai/'ya yazma.
+
+## Kritik Hatirlatici
+
+- Kullanici: Türkçe konus.
+- Kod ve yorumlar: English.
+- "DO NOT build custom UI" → MilCAM mimarisinin temel kurali.
+- FreeCAD kaynagina yama yok — sadece CMake flag + Python overlay + preferences.
+- CAM/postprocessor değişiklikleri: FreeCAD upstream'in patternine sadik kal.

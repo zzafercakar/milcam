@@ -1,5 +1,8 @@
 build/
 build-*/
+install/
+install-*/
+_inst/
 .cache/
 .vscode/.cache/
 compile_commands.json
@@ -10,6 +13,9 @@ CMakeUserPresets.json
 *.tmp
 *.log
 .DS_Store
+*.pyc
+__pycache__/
+.pytest_cache/
 
 # CodeSys / runtime artefacts that may appear during testing
 /var/cnc/jobs/*.gcode

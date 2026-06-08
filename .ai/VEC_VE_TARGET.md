@@ -1,18 +1,19 @@
-# VEC-VE Target Platform Notes
+# VEC-VE Target Platform
 
-MilCAM'in tasarımının her noktası bu donanımdan beslenir. Bu dosyayı oku.
+MilCAM'in deployment hedefi. Bu dosyayi oku — saha cihazinin gerçekleri
+mimari kararlarin kokunde.
 
-## Donanım Profili (Doğrulanmış)
+## Donanim Profili (Belgelenen)
 
-Kaynak: `/home/embed/Dev/CADNC/doc/VEC-VE-MU-AH 12 inch.pdf` + `How to Run FreeCAD(2).docx`.
+Kaynak: `doc/VEC-VE-MU-AH 12 inch.pdf` + `doc/How to Run FreeCAD(2).docx`.
 
-| Özellik       | Değer                                      |
+| Ozellik       | Deger                                      |
 | ------------- | ------------------------------------------ |
 | Model         | VEC-VE-MU-AH 12 inch                       |
 | CPU           | Quad-core ~1.6 GHz Cortex-A sınıfı (ARM)   |
-| RAM           | **DATASHEET'TE BELİRTİLMEMİŞ — Faz 0.5'te ölçülecek** |
+| RAM           | **DATASHEET'TE BELIRTILMEMIS** — Faz 5'te ölçülecek |
 | Disk          | microSD (TICard) + dahili flash            |
-| Display       | 12" 1024×768 TFT, PLED backlight 50K saat  |
+| Ekran         | 12" 1024×768 TFT, PLED backlight 50K saat  |
 | Touch         | 4-tel dirençli, ±%2 doğruluk               |
 | OS            | Embedded Linux (busybox userland)          |
 | Display srv   | X11, `DISPLAY=:0`, `QT_QPA_PLATFORM=xcb`   |
@@ -21,113 +22,122 @@ Kaynak: `/home/embed/Dev/CADNC/doc/VEC-VE-MU-AH 12 inch.pdf` + `How to Run FreeC
 | EtherCAT      | Master, CoE, CiA402                        |
 | Modbus        | RTU (RS485) + TCP (port 502/503)           |
 | Ethernet      | 192.168.1.123 (default)                    |
-| GPU           | Çerçeve tampon (framebuffer); OpenGL durumu Faz 0.5'te kontrol |
+| GPU           | Framebuffer; OpenGL durumu Faz 5'te kontrol |
 
-## Yazılım Çevresi (Kanıt)
+## Kanit: FreeCAD'in Bu Cihazda Calistigi
 
-`How to Run FreeCAD(2).docx`'ten alınan başarılı çalışan env-var seti
-(MilCAM da bunları kullanmalı):
+`How to Run FreeCAD(2).docx` belgesi, FreeCAD 1.0.2 AppImage'inin bu cihazda
+basariyla calistirildigini gosteriyor. Adimlar:
 
 ```bash
+# Cihaz uzerinden:
+mkdir -p /root/FreeCAD
+cd /root/FreeCAD
+# (AppImage USB/NFS uzerinden yerlestirildi)
+./FreeCAD_1.0.2-conda-Linux-aarch64-py311.AppImage --appimage-extract
+
+# Env vars (kritik):
 export DISPLAY=:0
 export QT_QPA_PLATFORM=xcb
 export TSLIB_TSDEVICE=/dev/input/event1
 export QT_QPA_GENERIC_PLUGINS=tslib:/dev/input/event1
-export XDG_RUNTIME_DIR=/usr/lib/        # tipik geçici workaround
+export XDG_RUNTIME_DIR=/usr/lib/
 export LD_LIBRARY_PATH=/lib:/usr/lib:/usr/lib/ts
+
+# Launch:
+/root/FreeCAD/squashfs-root/AppRun &
 ```
 
-FreeCAD 1.0.2 AppImage bu cihazda bir kez **başarıyla** çalıştırıldı — bu
-"CAM-class Qt6+OCCT uygulaması yürür" kanıtıdır.
+Bu MilCAM icin **iki onemli kanit:**
 
-## Bilinmeyen ve Faz 0.5'te Cevaplanacak Sorular
+1. **FreeCAD UI bu cihazda calisir.** Yani slim FreeCAD = MilCAM yaklasimi
+   donanim acisindan dogrulanmis.
+2. **Touch + X11 + Qt birlikte calisir.** Qt VirtualKeyboard input method
+   da calisma garantili.
 
-1. **RAM ne kadar?** En kritik soru. < 1 GB ise MilCAM çalıştırma yerine
-   workstation modeli (Plan C).
-2. **OpenGL versiyonu?** OCCT 7.6 GL 2.1+ ister. Yoksa software rasterizer
-   (yavaş).
-3. **TargetVisu windowed mode (`WindowType=0`) destekli mi?** Vendor build'i
-   stock CodeSys ayarlarını değiştirmiş olabilir.
-4. **`wmctrl` / `xdotool` cihazda kurulu mu?** Yoksa toolchain'e ekle.
-5. **`isolcpus` kernel cmdline'da var mı?** RT izolasyon zorunlu.
-6. **OPC UA server CodeSys'te aktif mi?** SP17+'da default değil.
+## Bilinmeyen ve Faz 5'te Cevaplanacak Sorular
 
-Komutlar `WORKPLAN.md` Faz 0.5'te listelendi.
+1. **RAM ne kadar?**
+   - < 1 GB → MilCAM (slim FreeCAD ~600 MB-1 GB RSS) sigamaz. Plan iptal.
+   - 1-2 GB → slim build'in agresif olmasi sart.
+   - >= 2 GB → konforlu.
+2. **OpenGL versiyonu nedir?** OCCT GL 2.1+ ister. Yoksa software rasterizer.
+3. **TargetVisu windowed mode** (`targetvisuextern.cfg WindowType=0`) calisiyor mu?
+4. **`wmctrl` cihazda kurulu mu?** Yoksa cross-build paketine ekle.
+5. **`isolcpus`** kernel cmdline'da aktif mi? CodeSys CNC icin gerekli.
+6. **CodeSys OPC UA server aktif mi?** SP17+ default acik degil.
 
-## Jitter Discipline (KRİTİK)
+## Jitter Disiplini
 
-CodeSys CNC interpolatörü her ms'de servo komut üretir. Jitter > 200 μs
-**servo izleme hatasına** sebep olur (parça hatalı, makine durur).
+CodeSys CNC interpolatoru her ms servo komut uretir. Jitter > 200 µs =
+servo izleme hatasi = parça kalitesi düşer veya makine durur.
 
-MilCAM'in jitter'a katkısı:
-- GPU draw call'ları → IRQ storm potansiyeli
-- USB-touch event'leri → kernel IRQ
-- Disk I/O (özellikle import sırasında STEP okurken)
+MilCAM'in cihazda olusturabilecegi RT kontaminasyon:
+- GPU draw call'lari → IRQ burst (FreeCAD viewport orbit ederken)
+- USB touch event'leri → kernel IRQ
+- Disk I/O (STEP import sirasinda buyuk dosya)
+- Python GC pauses
 
-**Mitigasyon kuralları:**
-1. CodeSys çekirdekleri (`isolcpus=2,3` veya benzeri) MilCAM'in **dışında**.
-2. MilCAM `taskset -c 0,1 milcam` ile pinlenir.
-3. Büyük import işlemleri background thread'de, throttled.
-4. cyclictest disiplini: her özellik PR'ı öncesi/sonrası **ölçülmeli**:
-   ```bash
-   cyclictest -p 80 -t1 -n -i 1000 -l 600000 -m
-   ```
-   Hedef: `Max Latencies < 200 us` MilCAM aktifken (orbit + import dahil).
+**Mitigasyon:**
 
-## TargetVisu Koeksistans Senaryoları
+1. `isolcpus=2,3` kernel cmdline → CodeSys cekirdekleri izole.
+2. systemd unit `freecad-milcam.service` icinde `CPUAffinity=0 1` → MilCAM
+   non-RT cores.
+3. CodeSys unit'inde `CPUAffinity=2 3` (mevcut vendor config'i kontrol et).
+4. IRQ pinning: `/proc/irq/<n>/smp_affinity` ile GPU/USB IRQ'larini 0,1'e baglar.
+5. Build sonrasi `cyclictest -p 80 -t1 -n -i 1000 -l 600000` ile dogrula.
 
-### Plan A — Windowed TargetVisu + MilCAM Side-by-Side
+**Hedef:** MilCAM aktifken (idle + orbit + STEP load testleri sirasinda)
+`Max Latencies < 200 us`.
+
+## TargetVisu Koeksistans Planlari
+
+### Plan A — Pencereli TargetVisu + MilCAM Yan Yana
 
 `/opt/codesys/targetvisu/targetvisuextern.cfg`:
-```
+```ini
 [CmpTargetVisu]
 WindowType=0
 WindowSizeWidth=1024
-WindowSizeHeight=720           ; üst şerit 48px ayır
+WindowSizeHeight=720
 WindowPositionX=0
-WindowPositionY=48
+WindowPositionY=48     ; uste 48px serit birak
 ```
 
-MilCAM aynı X server'da paralel pencere. Üst şerit (milcam-launcher) `wmctrl -a`
-ile birini öne getirir.
+48px'lik serit MilCAM'in window manager'inda HMI ↔ MilCAM gecis butonlari.
+`wmctrl` ile fokus degisimi.
 
 ### Plan B — Fullscreen TargetVisu + Workspace Switch
 
 Vendor build pencereli moda izin vermezse:
-- TargetVisu fullscreen workspace 1'de
-- MilCAM fullscreen workspace 2'de
-- `wmctrl -s 0` ↔ `wmctrl -s 1` ile switch
+- TargetVisu fullscreen workspace 1
+- MilCAM fullscreen workspace 2
+- `wmctrl -s 0` ↔ `wmctrl -s 1`
 
-### Plan C — Tek Pencere WebVisu
+### Plan C — Tek Pencere (TargetVisu yok)
 
-TargetVisu'yu hiç kullanma, CodeSys WebVisu'yu MilCAM'in içine
-`QWebEngineView` ile göm. Tek pencere, sekme tabanlı UI. Maliyet: Chromium
-runtime ~150 MB extra disk + RAM.
+WebVisu varsa MilCAM icinde `QWebEngineView`. Ama Help/Web disable'liyiz —
+QtWebEngine yok. Plan C calismaz mevcut konfigde.
 
-Karar Faz 0.5 sonrası verilecek.
+Karar Faz 5'te.
 
-## Operator Workflow Beklentisi
+## Operator Beklentisi
 
-1. Cihaz açılır → boot tamamlanır → launcher şeridi gözükür, TargetVisu
-   varsayılan görünür.
-2. Operator ofisten USB ile STEP getirir, USB'yi takar.
-3. Üst şeritteki `[CAM]` butonuna dokunur → MilCAM öne gelir.
-4. `Import` butonuna dokunur → dosya seçici → STEP yüklenir.
-5. `Operations` → sayısal değer girişi gerektiğinde Qt VirtualKeyboard otomatik
-   yukarı kayar.
-6. `Post + G-code` → önizleme.
-7. `→ Send to CodeSys` → G-code drop edilir, OPC UA üzerinden PLC haberdar.
-8. `[HMI]` butonuna dokunur → TargetVisu öne gelir → operator `Run` basar.
+1. Boot tamamlanir → TargetVisu varsayilan acilir.
+2. Operator USB STEP getirir, takar.
+3. Uste serit `[CAM]` butonu → MilCAM one gelir (`wmctrl -a MilCAM`).
+4. File → Open → STEP → operator gelisik FreeCAD CAM is akisini izler.
+5. Touch ile sayisal deger girisi gerekirse Qt VirtualKeyboard yukarı kayar.
+6. `Send to CodeSys` butonu → G-code dropuyor + PLC haberdar.
+7. `[HMI]` butonu → TargetVisu one gelir.
+8. Operator `Run` basar.
 
-Hiçbir adımda klavye gerekmez. Dosya yolları, iş isimleri, operasyon
-parametreleri hep Virtual Keyboard ile.
+Hicbir adimda fiziksel klavye gerekmez.
 
-## Cihaz Erişim Bilgileri (Şimdilik)
+## Cihaz Erisim
 
-- IP: `192.168.1.123` (varsayım, manuel'deki default)
-- SSH: `root@192.168.1.123` (parola sahada belirlenir)
-- NFS mount edilebilir: `busybox mount -o nolock -t nfs ...`
-- microSD slot dış arayüz: `/dev/mmcblk1` tipik
+- IP: `192.168.1.123` (manual default)
+- SSH: `root@192.168.1.123`
+- microSD: `/dev/mmcblk1`
 
-**Üretim cihazında SSH/parola kayıtları `.ai/`'ya YAZILMAMALI.** Ayrı bir
-şifreli store (1Password, vault) kullan.
+**Production parolalari .ai/'ya yazmayin.** Vault kullanin.

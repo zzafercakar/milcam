@@ -2,11 +2,16 @@
   "version": "2.0.0",
   "tasks": [
     {
+      "label": "Setup FreeCAD source",
+      "type": "shell",
+      "command": "./scripts/setup-freecad-source.sh",
+      "options": { "cwd": "${workspaceFolder}" }
+    },
+    {
       "label": "MilCAM configure",
       "type": "shell",
       "command": "cmake --preset default",
-      "options": { "cwd": "${workspaceFolder}" },
-      "problemMatcher": []
+      "options": { "cwd": "${workspaceFolder}" }
     },
     {
       "label": "MilCAM build",
@@ -17,21 +22,34 @@
       "problemMatcher": [ "$gcc" ]
     },
     {
-      "label": "MilCAM tests",
+      "label": "MilCAM install (DESTDIR=_inst)",
+      "type": "shell",
+      "command": "DESTDIR=$PWD/_inst cmake --install build",
+      "options": { "cwd": "${workspaceFolder}" },
+      "dependsOn": "MilCAM build"
+    },
+    {
+      "label": "Run installed MilCAM",
+      "type": "shell",
+      "command": "DISPLAY=:0 QT_QPA_PLATFORM=xcb ./_inst/usr/local/bin/FreeCAD",
+      "options": { "cwd": "${workspaceFolder}" },
+      "dependsOn": "MilCAM install (DESTDIR=_inst)"
+    },
+    {
+      "label": "MilCAM tests (pytest)",
       "type": "shell",
       "command": "ctest --test-dir build --output-on-failure",
       "options": { "cwd": "${workspaceFolder}" },
       "group": { "kind": "test", "isDefault": true }
     },
     {
-      "label": "MilCAM run",
+      "label": "Overlay-only build",
       "type": "shell",
-      "command": "DISPLAY=:0 QT_QPA_PLATFORM=xcb ./build/milcam",
-      "options": { "cwd": "${workspaceFolder}" },
-      "dependsOn": "MilCAM build"
+      "command": "cmake --preset overlay-only && cmake --build build-overlay -j$(nproc)",
+      "options": { "cwd": "${workspaceFolder}" }
     },
     {
-      "label": "MilCAM cross-build (panel-pc)",
+      "label": "Cross-build for panel PC",
       "type": "shell",
       "command": "cmake --preset panel-pc && cmake --build build-aarch64 -j$(nproc)",
       "options": { "cwd": "${workspaceFolder}" }

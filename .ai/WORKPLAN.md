@@ -1,189 +1,173 @@
-# MilCAM Workplan
+# MilCAM Workplan (revised 2026-06-08)
 
-Bu dosya MilCAM'in faz faz yol haritasini tutar. Her faz: amac, kabul kriteri,
-somut adimlar, riskler.
+## Faz 0 — Yanlis Iskelet (IPTAL, silindi)
 
-## Faz 0 — Iskelet  ✅  (2026-06-08)
+Ilk denemede CADNC tarzi kendi QML UI yazildi. Yanlis. Kullanici aciklamasi
+sonrasi tamamen silindi. Detay: ENGINEERING_LOG.md "2026-06-08 - Pivot".
 
-**Amac:** Calisılabilir bir proje yapisi.
+---
+
+## Faz 0.5 — Overlay Iskelet  ✅  (2026-06-08)
 
 **Tamamlanan:**
-- Dizin agaci olusturuldu.
-- CADNC'den `cam/`, `adapter/`, `util/`, `viewport/`, `resources/` kopyalandi.
-- FreeCAD slim subset (`Base`, `App`, `Mod/Material/App`, `Mod/Part/App`)
-  + 3rdParty + cmake yerlestirildi. Sketcher ve PartDesign **dahil edilmedi**.
-- Yeni top-level `CMakeLists.txt` yazildi — adapter glob Sketch* ve Nest*'i
-  build'e almıyor.
-- `app/main.cpp` (Virtual Keyboard + single-instance + crash handler).
-- `ui/qml/Main.qml` touch-first shell.
-- `adapter/inc/ImportFacade.h` + `adapter/src/ImportFacade.cpp` (stub).
-- `adapter/inc/CodesysBridge.h` + `adapter/src/CodesysBridge.cpp` (drop folder
-  ve `wmctrl` raise hazir; OPC UA stub).
-- `tests/test_codesys_bridge.cpp` smoke test.
-- CLAUDE.md, README.md, LICENSE, .gitignore, .ai/ dokuman seti.
-- .vscode/ workspace + launch + tasks.
 
-## Faz 0.5 — VEC-VE Hardware Reality Check  🔜  (TEK SOMUT EKSIK ADIM)
+- `milcam/CodesysBridge/` — C++ core (drop folder + wmctrl) + CPython binding
+- `milcam/Mod/MilCAM/` — Init.py, InitGui.py, 3 komut, codesys_post.py, 3 SVG ikon
+- `CMakeLists.txt` — FreeCAD'i wrap eder, ~20 modul BUILD_<X>=OFF ile devre disi
+- `CMakePresets.json` — default, debug, overlay-only, panel-pc preset'leri
+- `tests/python/` — postprocessor + bridge icin pytest smoke
+- Tum `.ai/` belgeleri yeni mimariye gore yeniden yazildi
+- `CLAUDE.md`, `README.md`, `LICENSE`, `.gitignore` yenilendi
 
-**Amac:** Cihazin gercek kapasitesini bilmek. Aksi halde butun plan spekulasyon.
+---
+
+## Faz 1 — Ilk End-to-End Build  🔜 (sıradaki)
+
+**Amac:** Slim FreeCAD'in derlenebildigini ve calistigini dogrulamak.
 
 **Adimlar:**
-1. SSH ile panel PC'ye bagla (varsayim: `root@192.168.1.123`).
-2. Su komutlari calistir ve sonuclari `.ai/ENGINEERING_LOG.md`'ye yapistir:
+
+1. FreeCAD build prerekleri host'a kurulu mu kontrol et:
    ```bash
-   uname -a
-   cat /etc/os-release 2>/dev/null
-   cat /proc/cpuinfo | grep -E "model name|Hardware|Features" | sort -u
-   free -h
-   df -h /
-   df -h /root
-   ls -la /opt/codesys/ /etc/codesys* 2>/dev/null
-   cat /etc/codesys*/CODESYSControl.cfg 2>/dev/null | head -100
-   ps auxf | head -40
-   glxinfo 2>/dev/null | grep -E "OpenGL (version|renderer)"
-   which wmctrl xdotool onboard
-   ls /dev/input/by-path/
+   apt list --installed 2>/dev/null | grep -E "qt5|coin3|opencascade|python3-dev|boost|xerces"
    ```
-3. **GO / NO-GO karar agaci:**
-   - RAM >= 2 GB ✅ Plan A devam.
-   - RAM 1-2 GB ⚠ Slim CADNC viewport, footprint dietleme zorunlu.
-   - RAM < 1 GB ⛔ Plan C: MilCAM ayri workstation'da, panel PC yalniz drop-folder
-     receiver.
-   - OpenGL >= 2.0 ✅
-   - OpenGL yok / yetersiz ⛔ Software rasterizer (cok yavas) veya 2D-only mod.
-   - Bos disk >= 500 MB ✅
+2. `cmake --preset default` cagir. CMake basari ile yapilandirmazsa
+   FreeCAD'in eksik dep mesajlarini takip et.
+3. `cmake --build build -j$(nproc)` calistir. Disable edilen modullerin
+   gercekten build'e dahil edilmediginden emin ol:
+   ```bash
+   grep -r "BUILD_FEM" build/CMakeCache.txt    # OFF olmali
+   grep -r "BUILD_CAM" build/CMakeCache.txt    # ON olmali
+   ```
+4. `DESTDIR=$PWD/_inst cmake --install build` — staging install.
+5. `_inst/usr/local/bin/FreeCAD --help` cagir, version cikiyorsa OK.
 
-**Kabul kriteri:** Hardware durumu ENGINEERING_LOG.md'de belgelenmis. Plan A/B/C
-sectim, donanim diaspora dietleme listesi netlesmis.
-
----
-
-## Faz 1 — Adapter Slimming
-
-**Amac:** CAM-only adapter — gereksiz kodu temizle.
-
-**Adimlar:**
-1. Sil: `adapter/inc/SketchFacade.h`, `adapter/inc/SketchDocument.h`,
-   `adapter/inc/SketchEntity.h`, `adapter/inc/NestFacade.h`,
-   `adapter/inc/SceneManager.h`.
-2. Sil: `adapter/src/SketchFacade.cpp`, `adapter/src/NestFacade.cpp`.
-3. `CadEngine.h/.cpp` icindeki `SketchFacade*` ve `NestFacade*` referanslarini
-   cikar. Rename: `CadEngine` → `MilCamEngine`. (Veya kalsin, sade isim
-   degisikligi.)
-4. `CadDocument` icindeki sketch ile ilgili API'leri kaldir (eger varsa).
-5. `PartFacade` → import-modu disinda her sey kaldirilir; isim `ImportFacade`'e
-   gecis. Mevcut `ImportFacade` su an stub — `PartFacade`'in import koduna ihtiyac
-   var.
-6. CMake glob filtresini kaldir; artik fiziksel olarak yok zaten.
-
-**Kabul kriteri:** Adapter clean compile, `nm libmilcam_adapter.a` icinde
-Sketch/Nest yok.
-
----
-
-## Faz 2 — Geometry Intake
-
-**Amac:** STEP/IGES/BREP/DXF/STL gerçek olarak içeri alinmasi.
-
-**Adimlar:**
-1. `ImportFacade::importFile` icinde uzantiya gore:
-   - `.step|.stp`  → `Part::ImportStep` (FreeCAD API)
-   - `.iges|.igs`  → `Part::ImportIges`
-   - `.brep`       → `BRepTools::Read`
-   - `.stl`        → `StlAPI_Reader`
-   - `.obj`        → OCCT OBJ reader
-   - `.dxf`        → libArea (FreeCAD's importDXF) — read-only
-2. Yuklenen TopoShape'i `CamGeometrySource` ile CAM modulune baglar.
-3. Viewport'a duzgun render et: bbox'a fit, varsa renkleri aktar.
-4. UI: import progress, hatali dosyada anlasilir mesaj.
-
-**Kabul kriteri:** `tests/test_import_step.cpp` — 5 ornek STEP, 3 DXF, 2 STL
-hatasiz acilir; bbox dogrulanir.
-
----
-
-## Faz 3 — OPC UA + Drop Folder
-
-**Amac:** PLC ile gerçek IPC.
-
-**Adimlar:**
-1. `MILCAM_ENABLE_OPCUA=ON` ile build, open62541 cekiliyor.
-2. `CodesysBridge::connect` — secure channel (opt: encrypt yok ilk surumde),
-   namespace browse, sembolleri register et.
-3. Sembol haritasi (CodeSys tarafinda kurulacak — ayri dokuman):
-   - `MilCAM.JobReadyPath`  (string, MilCAM → PLC)
-   - `MilCAM.RunRequest`     (bool, MilCAM → PLC)
-   - `PLC.MachineState`      (int, PLC → MilCAM)
-   - `PLC.CurrentLine`       (int, PLC → MilCAM)
-   - `PLC.EStop`             (bool, PLC → MilCAM)
-4. `CodesysBridge::notifyJobReady(path)` — sembolu set et + RunRequest event.
-5. Subscribe to MachineState/CurrentLine/EStop → Qt signal'lara map.
-6. UI'da PLC durum LED'i (yesil/sari/kirmizi).
-
-**Kabul kriteri:** Bir test PLC programi ile end-to-end calisma: MilCAM job
-drop ediyor, PLC dosyayi okuyor, MilCAM CurrentLine guncellemesini goruyor.
-
----
-
-## Faz 4 — VEC-VE Deploy + Coexistence
-
-**Amac:** Iki uygulama (CodeSys TargetVisu + MilCAM) ayni cihazda calisiyor.
-
-**Adimlar:**
-1. Cross-compile presetini (`panel-pc`) gerçek bir aarch64 sysroot ile besle.
-   `scripts/toolchain-aarch64.cmake` yaz.
-2. `scripts/deploy.sh` — rsync ile binary + qml kaynagi + qt runtime panel PC'ye.
-3. Cihazda `targetvisuextern.cfg` icine `WindowType=0` ekle. TargetVisu pencereli
-   acilsin mi kontrol et.
-4. Yoksa Plan B: TargetVisu fullscreen kalsin, MilCAM ayri X workspace'inde,
-   `wmctrl -s` ile switch.
-5. systemd unit yaz: `milcam.service`, `milcam-launcher.service` (uste sabit
-   switcher bar). Boot sirasi: codesys → launcher → milcam.
-6. CodeSys ST kodunda "Open CAM" butonu → `SysProcessExecuteCommand('wmctrl -a MilCAM ...')`.
-7. `/etc/codesys*/CODESYSControl.cfg`'ye `[SysProcess] Command=AllowAll` ekle.
+**Beklenen pürüzler:**
+- `BUILD_HELP=OFF` ile FreeCAD CMake'i dogru sekilde Help modulunu skip ediyor mu — kontrol.
+- Cross-cutting module dependency'leri olabilir (orn. Inspection Part'a baglidir, BIM Draft'a).
+  Eger build hatasi varsa, bagimlilik gerektiren X'i tekrar `ON` yap.
+- `add_subdirectory()` ile sub-project olarak cagirildiginda FreeCAD bazen
+  `CMAKE_CURRENT_SOURCE_DIR` varsayimlari ile karisikilik cikarir.
+  Workaround: build dir'i `/tmp/freecad-build` gibi mutlak path'e tasi.
 
 **Kabul kriteri:**
-- Cihaz acilirken: TargetVisu pencereli, MilCAM gizli/arkada, ust serit gorunur.
-- "CAM" butonu basinca MilCAM one geliyor.
-- "HMI" butonu basinca TargetVisu one geliyor.
-- `cyclictest -p 80 -t1 -n -i 1000 -l 600000` MilCAM aktifken max latency
-  < 200 us (Faz 0.5'te belirlenmis limit).
+- Build sifir hata ile tamamlanir.
+- FreeCAD baslar, version yazar.
+- Workbench listesinde MilCAM gozukur, FEM/BIM/TechDraw GOZUKMEZ.
 
 ---
 
-## Faz 5 — Saha Kabul Testi + Hardening
+## Faz 2 — Workbench Gorunurluk + Send-to-CodeSys Smoke
 
-**Amac:** Production-ready.
+**Amac:** MilCAM workbench gerçekten CAM is akisini sergileyebilir.
 
 **Adimlar:**
-1. 24 saat dayaniklilik — HMI↔CAM gecisi 1000+ defa.
-2. Power-cut testi — beklenmedik kapatma sonrasi disk butunlugu.
-3. `/var/cnc/jobs/` dolma senaryosu — graceful warning, eski jobs temizleme.
-4. EStop senaryosu — PLC EStop'lardiginda MilCAM red banner.
-5. Turkce/English UI dil destegi.
-6. Operator kullanim kilavuzu — `doc/USER_GUIDE_TR.md`.
 
-**Kabul kriteri:** Saha pilotu (1 makine, 2 hafta) sorunsuz.
+1. FreeCAD'i ac, MilCAM workbench se. Boş bir Job olustur.
+2. Bir kare cubuk import et (STEP veya basit Part::Box).
+3. Profile operasyonu ekle, post-process et — `Send to CodeSys` butonuna bas.
+4. `/tmp/milcam/send_to_codesys.gcode` olustu mu kontrol.
+5. `~/var/cnc/jobs/<job_id>.gcode` dropuyor mu kontrol (testte yoksa
+   `CodesysBridge.drop_folder = "/tmp/cnc-test"` yap).
+6. `wmctrl -a TargetVisu` test et (TargetVisu yoksa "no window found" beklenen).
 
----
-
-## Cross-cutting concerns
-
-- **Real-time jitter discipline** her fazda dikkate alinmali. Yeni bir IO
-  islemine baslamadan once `.ai/VEC_VE_TARGET.md`'deki kurali oku.
-- **CAM modul senkronizasyonu** — burada cam/'da degisiklik yaparsan, CADNC
-  cam/'in da hizalanmasi gerek.
-- **freecad/ minimum modification** — upstream uyumu kritik.
+**Kabul kriteri:** Operatorun manuel adimi olmadan G-code dosyasi dogru
+yerlere dususuyor; FreeCAD Console'da "MilCAM: dropped N bytes" mesaji
+gorulur.
 
 ---
 
-## Riskler ozeti
+## Faz 3 — Branding (App Name, Splash, Default WB)
 
-1. **VEC-VE donanim yetersiz** — Faz 0.5 olcumune kadar bilinmiyor.
-2. **TargetVisu vendor build'i windowed mode izin vermeyebilir** — fallback
-   WebVisu (QWebEngineView).
-3. **PartFacade'in import API'si MilCAM scope'una uymayabilir** — Faz 2'de
-   secim: ya genisle ya tamamen yeni `ImportFacade` yaz.
-4. **CADNC cam/ ile divergence riski** — disiplinli backport zorunlu.
-5. **OPC UA sembol sözlesmesi PLC ekibiyle yazili olmali** — sembol isim
-   degisirse iki tarafta da kirilir.
+**Amac:** Operator "FreeCAD" yerine "MilCAM" gorsun.
+
+**Adimlar:**
+
+1. FreeCAD'in app name override mekanizmasini kullan:
+   - Linux `.desktop` dosyasi: Name=MilCAM (deploy.sh ile yerleştir)
+   - Window title: Mod/MilCAM/InitGui.py'da `QApplication.setApplicationName("MilCAM")`
+   - Splash: FreeCAD'in CMake'i `FREECAD_SPLASH_PIC` parametresi kabul ediyor mu? Kontrol.
+2. Default workbench preferences:
+   `User parameter:BaseApp/Preferences/General/AutoloadModule = "MilCamWorkbench"`
+3. Icon override: kendi `MilCAM.svg`'mizi `.desktop`'ta kullan.
+
+**Kabul kriteri:** Boot sonrasi pencere basligi "MilCAM 0.2.0", uygulamayi
+acan task launcher'da ikon MilCAM.
+
+---
+
+## Faz 4 — OPC UA Gerçek Baglanti
+
+**Amac:** PLC ile sembolik veri akisi.
+
+**Adimlar:**
+
+1. `MILCAM_ENABLE_OPCUA=ON` ile open62541 cek + link.
+2. `CodesysBridge::connect()` icine session açma, subscription kurma:
+   - Subscribe: `PLC.MachineState`, `PLC.CurrentLine`, `PLC.EStop`
+   - Write: `MilCAM.JobReadyPath` (string), `MilCAM.RunRequest` (bool)
+3. Heartbeat thread — saniyede 1 `MilCAM.AppHeartbeat++`.
+4. Python tarafinda durum subscription notification'larini
+   `FreeCAD.Console.PrintMessage` ile gosteren basit dinleyici.
+
+**PLC tarafi:** ayri bir CodeSys projesinde GVL_MilCAM open. Sembol
+sozlesmesi `.ai/CODESYS_BRIDGE.md`'de.
+
+**Kabul kriteri:** Mock open62541 server'a karsi MilCAM job submit eder,
+mock server JobReadyPath sembolunu okur, MachineState=Running set eder,
+MilCAM bunu console'da yansitir.
+
+---
+
+## Faz 5 — VEC-VE Deploy + Saha
+
+**Amac:** Cihazda calisir.
+
+**Adimlar:**
+
+1. **Donanim kontrolu (kritik):**
+   ```bash
+   ssh root@192.168.1.123 'uname -a; free -h; df -h; glxinfo | grep "OpenGL version"'
+   ```
+   RAM/GPU yetersizse, **dur ve mimari plan yeniden**.
+2. `cmake --preset panel-pc` — cross-compile.
+3. `./scripts/deploy.sh root@192.168.1.123` — rsync + systemd unit.
+4. Cihazda `targetvisuextern.cfg` icine `WindowType=0` ekle.
+5. CodeSys ST: "Open CAM" buton → `SysProcessExecuteCommand('wmctrl -a MilCAM')`.
+6. 24 saat dayaniklilik testi, cyclictest jitter olcumu.
+
+**Kabul kriteri:**
+- MilCAM cihazda acilir, dokunmatikle calisir.
+- HMI ↔ MilCAM gecisleri sorunsuz.
+- PLC jitter MilCAM aktifken < 200 us.
+
+---
+
+## Riskler Ozeti
+
+1. **FreeCAD add_subdirectory ile MilCAM altinda dogru build edilmeyebilir.**
+   FreeCAD CMake'i kendi top-level oldugunu varsayar. Workaround: fork edip
+   patch atmak yerine eski yontemle dis FreeCAD build'i + sadece overlay
+   install (overlay-only preset).
+2. **BUILD_<X>=OFF flag'leri inter-module dependency yuzunden kirilabilir.**
+   Ornegin BIM=OFF dersek ama BIM bir baska modulu cagiriyorsa link hatasi
+   olur. Faz 1'de gozlemlenecek.
+3. **FreeCAD CAM workbench API'si versiyonlar arasi degisken.** 1.0/1.1/1.2
+   farkli command isimleri (`Path_Profile` vs `CAM_Profile`). Mod/MilCAM
+   bunlari adaptive olarak handle etmeli.
+4. **VEC-VE donanim hala olculmedi.** Faz 5 SSH check kritik.
+5. **CodesysBridge.so ABI uyumu** — FreeCAD'in Python versiyonu ile build
+   ettigimiz extension'un Python versiyonu **ayni** olmali. Cross-build'de
+   sysroot'a dikkat.
+
+---
+
+## Cross-cutting
+
+- Postprocessor MilCAM'in CodeSys-ozgu cikis surumunu uretir. Yine de
+  FreeCAD'in upstream postprocessor library'sinin formuna sadik kalir
+  (PARAMS, TOOLTIP, ARGUMENTS, export(...) imzasi) ki upstream evrimine
+  ayak uydursun.
+- `Mod/MilCAM/` icindeki Python kod **FreeCAD ABI'sine bagli**. FreeCAD
+  major versiyon atlamalarinda komut isim degisiklikleri olur. Surekli
+  upstream takibi gerekir.

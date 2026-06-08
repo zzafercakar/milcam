@@ -1,46 +1,53 @@
 {
   "folders": [
-    { "name": "MilCAM",  "path": "." },
-    { "name": "CADNC (sibling — CAM upstream)", "path": "../CADNC" }
+    { "name": "MilCAM (overlay + CMake)", "path": "." },
+    { "name": "FreeCAD upstream (read-only)", "path": "../../../Downloads/FreeCAD-main-1-1-git" },
+    { "name": "CADNC (sibling, different architecture)", "path": "../CADNC" }
   ],
   "settings": {
-    "cmake.sourceDirectory": "${workspaceFolder:MilCAM}",
-    "cmake.buildDirectory":  "${workspaceFolder:MilCAM}/build",
+    "cmake.sourceDirectory": "${workspaceFolder:MilCAM (overlay + CMake)}",
+    "cmake.buildDirectory":  "${workspaceFolder:MilCAM (overlay + CMake)}/build",
     "cmake.configureOnOpen": false,
     "cmake.configureSettings": {
-      "MILCAM_ENABLE_FREECAD": "ON",
-      "MILCAM_ENABLE_OPCUA":    "OFF",
-      "MILCAM_BUILD_TESTS":     "ON"
+      "FREECAD_SOURCE_DIR":   "/home/embed/Downloads/FreeCAD-main-1-1-git",
+      "MILCAM_BUILD_FREECAD": "ON"
     },
     "files.associations": {
       "*.qml": "qml",
-      "*.qmldir": "qmldir",
-      "*.h.in":   "cpp"
+      "*.h.in":   "cpp",
+      "InitGui.py": "python",
+      "Init.py":    "python"
     },
     "files.exclude": {
       "build":             true,
       "build-*":           true,
-      "freecad/3rdParty/PyCXX/CXX": true
+      "install":           true,
+      "install-*":         true,
+      "_inst":             true,
+      "**/__pycache__":    true,
+      "**/.pytest_cache":  true
     },
     "search.exclude": {
-      "build":  true,
-      "build-*": true,
-      "freecad/3rdParty": true,
-      "freecad/Base/Tools": true
+      "build":            true,
+      "build-*":          true,
+      "install":          true,
+      "install-*":        true,
+      "_inst":            true,
+      "**/__pycache__":   true
     },
-    "C_Cpp.default.cppStandard": "c++20",
+    "C_Cpp.default.cppStandard": "c++17",
     "C_Cpp.default.includePath": [
-      "${workspaceFolder:MilCAM}/adapter/inc",
-      "${workspaceFolder:MilCAM}/cam/inc",
-      "${workspaceFolder:MilCAM}/util/inc",
-      "${workspaceFolder:MilCAM}/viewport/inc",
-      "${workspaceFolder:MilCAM}/freecad",
-      "${workspaceFolder:MilCAM}/build/generated",
-      "/usr/include/opencascade",
-      "/usr/include/qt6",
-      "/usr/include/eigen3"
+      "${workspaceFolder:MilCAM (overlay + CMake)}/milcam/CodesysBridge/inc",
+      "/usr/include/python3*",
+      "/home/embed/Downloads/FreeCAD-main-1-1-git/src"
     ],
-    "C_Cpp.default.defines": [ "QT_NO_KEYWORDS" ],
+    "C_Cpp.default.defines": [],
+    "python.analysis.extraPaths": [
+      "${workspaceFolder:MilCAM (overlay + CMake)}/milcam/Mod/MilCAM",
+      "${workspaceFolder:MilCAM (overlay + CMake)}/milcam/Mod/MilCAM/PostProcessor",
+      "${workspaceFolder:FreeCAD upstream (read-only)}/src/Mod/CAM",
+      "${workspaceFolder:FreeCAD upstream (read-only)}/src/Mod/Path"
+    ],
     "editor.formatOnSave": false,
     "editor.tabSize": 4,
     "editor.insertSpaces": true,
@@ -51,7 +58,8 @@
       "ms-vscode.cpptools",
       "ms-vscode.cmake-tools",
       "twxs.cmake",
-      "theqtcompany.qt-qml",
+      "ms-python.python",
+      "ms-python.vscode-pylance",
       "redhat.vscode-yaml",
       "yzhang.markdown-all-in-one"
     ]
@@ -60,13 +68,12 @@
     "version": "0.2.0",
     "configurations": [
       {
-        "name": "(Linux) Launch MilCAM",
+        "name": "Run installed MilCAM (FreeCAD)",
         "type": "cppdbg",
         "request": "launch",
-        "program": "${workspaceFolder:MilCAM}/build/milcam",
+        "program": "${workspaceFolder:MilCAM (overlay + CMake)}/_inst/usr/local/bin/FreeCAD",
         "args": [],
-        "stopAtEntry": false,
-        "cwd": "${workspaceFolder:MilCAM}",
+        "cwd": "${workspaceFolder:MilCAM (overlay + CMake)}",
         "environment": [
           { "name": "DISPLAY",          "value": ":0" },
           { "name": "QT_QPA_PLATFORM",  "value": "xcb" },
@@ -74,18 +81,15 @@
         ],
         "externalConsole": false,
         "MIMode": "gdb",
-        "setupCommands": [
-          { "description": "Pretty-print", "text": "-enable-pretty-printing" }
-        ],
-        "preLaunchTask": "MilCAM build"
+        "preLaunchTask": "MilCAM install"
       },
       {
-        "name": "(Linux) Run smoke test_codesys_bridge",
-        "type": "cppdbg",
+        "name": "pytest (overlay-only)",
+        "type": "python",
         "request": "launch",
-        "program": "${workspaceFolder:MilCAM}/build/bin/test_codesys_bridge",
-        "cwd": "${workspaceFolder:MilCAM}",
-        "MIMode": "gdb"
+        "module": "pytest",
+        "args": [ "-v", "tests/python" ],
+        "cwd": "${workspaceFolder:MilCAM (overlay + CMake)}"
       }
     ]
   },
@@ -93,39 +97,51 @@
     "version": "2.0.0",
     "tasks": [
       {
+        "label": "Setup FreeCAD source",
+        "type": "shell",
+        "command": "./scripts/setup-freecad-source.sh",
+        "options": { "cwd": "${workspaceFolder:MilCAM (overlay + CMake)}" },
+        "detail": "Clone FreeCAD source into ~/Downloads/FreeCAD-main-1-1-git"
+      },
+      {
         "label": "MilCAM configure",
         "type": "shell",
         "command": "cmake --preset default",
-        "options": { "cwd": "${workspaceFolder:MilCAM}" },
-        "problemMatcher": []
+        "options": { "cwd": "${workspaceFolder:MilCAM (overlay + CMake)}" }
       },
       {
         "label": "MilCAM build",
         "type": "shell",
         "command": "cmake --build build -j$(nproc)",
-        "options": { "cwd": "${workspaceFolder:MilCAM}" },
+        "options": { "cwd": "${workspaceFolder:MilCAM (overlay + CMake)}" },
         "group": { "kind": "build", "isDefault": true },
         "problemMatcher": [ "$gcc" ]
       },
       {
-        "label": "MilCAM tests",
+        "label": "MilCAM install",
         "type": "shell",
-        "command": "ctest --test-dir build --output-on-failure",
-        "options": { "cwd": "${workspaceFolder:MilCAM}" },
-        "group": { "kind": "test", "isDefault": true }
-      },
-      {
-        "label": "MilCAM run",
-        "type": "shell",
-        "command": "DISPLAY=:0 QT_QPA_PLATFORM=xcb ./build/milcam",
-        "options": { "cwd": "${workspaceFolder:MilCAM}" },
+        "command": "DESTDIR=$PWD/_inst cmake --install build",
+        "options": { "cwd": "${workspaceFolder:MilCAM (overlay + CMake)}" },
         "dependsOn": "MilCAM build"
       },
       {
-        "label": "MilCAM cross-build (panel-pc)",
+        "label": "MilCAM tests (pytest)",
+        "type": "shell",
+        "command": "ctest --test-dir build --output-on-failure",
+        "options": { "cwd": "${workspaceFolder:MilCAM (overlay + CMake)}" },
+        "group": { "kind": "test", "isDefault": true }
+      },
+      {
+        "label": "Overlay-only build",
+        "type": "shell",
+        "command": "cmake --preset overlay-only && cmake --build build-overlay -j$(nproc)",
+        "options": { "cwd": "${workspaceFolder:MilCAM (overlay + CMake)}" }
+      },
+      {
+        "label": "Cross-build for panel PC",
         "type": "shell",
         "command": "cmake --preset panel-pc && cmake --build build-aarch64 -j$(nproc)",
-        "options": { "cwd": "${workspaceFolder:MilCAM}" }
+        "options": { "cwd": "${workspaceFolder:MilCAM (overlay + CMake)}" }
       }
     ]
   }

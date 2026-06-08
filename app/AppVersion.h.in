@@ -1,3 +1,0 @@
-#pragma once
-#define MILCAM_APP_VERSION "@PROJECT_VERSION@"
-#define MILCAM_APP_NAME    "MilCAM"

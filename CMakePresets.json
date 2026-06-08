@@ -5,14 +5,14 @@
     {
       "name": "default",
       "displayName": "MilCAM default (host build)",
-      "description": "Native build on the developer workstation",
+      "description": "Slim FreeCAD build for the developer workstation.",
       "binaryDir": "${sourceDir}/build",
-      "generator": "Unix Makefiles",
+      "generator": "Ninja",
       "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "RelWithDebInfo",
-        "MILCAM_ENABLE_FREECAD": "ON",
-        "MILCAM_ENABLE_OPCUA": "OFF",
-        "MILCAM_BUILD_TESTS": "ON"
+        "CMAKE_BUILD_TYPE":      "RelWithDebInfo",
+        "FREECAD_SOURCE_DIR":    "/home/embed/Downloads/FreeCAD-main-1-1-git",
+        "MILCAM_BUILD_FREECAD":  "ON",
+        "CMAKE_INSTALL_PREFIX":  "${sourceDir}/install"
       }
     },
     {
@@ -23,34 +23,35 @@
       "cacheVariables": { "CMAKE_BUILD_TYPE": "Debug" }
     },
     {
-      "name": "asan",
-      "inherits": "debug",
-      "displayName": "MilCAM debug + ASan",
-      "binaryDir": "${sourceDir}/build-asan",
-      "cacheVariables": { "MILCAM_ENABLE_ASAN": "ON" }
+      "name": "overlay-only",
+      "displayName": "Overlay only (system FreeCAD)",
+      "description": "Skip building FreeCAD — build only CodesysBridge + Mod/MilCAM. Faster iteration when FreeCAD is already installed.",
+      "binaryDir": "${sourceDir}/build-overlay",
+      "generator": "Ninja",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE":     "RelWithDebInfo",
+        "MILCAM_BUILD_FREECAD": "OFF",
+        "CMAKE_INSTALL_PREFIX": "/usr"
+      }
     },
     {
       "name": "panel-pc",
       "displayName": "MilCAM for VEC-VE panel PC (aarch64)",
-      "description": "Cross-compile to ARM64 — see scripts/toolchain-aarch64.cmake",
       "binaryDir": "${sourceDir}/build-aarch64",
       "generator": "Ninja",
       "toolchainFile": "${sourceDir}/scripts/toolchain-aarch64.cmake",
       "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "MinSizeRel",
-        "MILCAM_ENABLE_FREECAD": "ON",
-        "MILCAM_ENABLE_OPCUA": "ON",
-        "MILCAM_BUILD_TESTS": "OFF"
+        "CMAKE_BUILD_TYPE":     "MinSizeRel",
+        "FREECAD_SOURCE_DIR":   "/home/embed/Downloads/FreeCAD-main-1-1-git",
+        "MILCAM_BUILD_FREECAD": "ON",
+        "CMAKE_INSTALL_PREFIX": "${sourceDir}/install-aarch64"
       }
     }
   ],
   "buildPresets": [
-    { "name": "default", "configurePreset": "default", "jobs": 0 },
-    { "name": "debug",   "configurePreset": "debug",   "jobs": 0 },
-    { "name": "asan",    "configurePreset": "asan",    "jobs": 0 },
-    { "name": "panel-pc","configurePreset": "panel-pc","jobs": 0 }
-  ],
-  "testPresets": [
-    { "name": "default", "configurePreset": "default", "output": { "outputOnFailure": true } }
+    { "name": "default",      "configurePreset": "default",      "jobs": 0 },
+    { "name": "debug",        "configurePreset": "debug",        "jobs": 0 },
+    { "name": "overlay-only", "configurePreset": "overlay-only", "jobs": 0 },
+    { "name": "panel-pc",     "configurePreset": "panel-pc",     "jobs": 0 }
   ]
 }

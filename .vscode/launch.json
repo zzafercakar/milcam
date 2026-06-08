@@ -2,12 +2,11 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "(Linux) Launch MilCAM",
+      "name": "Run installed MilCAM (FreeCAD)",
       "type": "cppdbg",
       "request": "launch",
-      "program": "${workspaceFolder}/build/milcam",
+      "program": "${workspaceFolder}/_inst/usr/local/bin/FreeCAD",
       "args": [],
-      "stopAtEntry": false,
       "cwd": "${workspaceFolder}",
       "environment": [
         { "name": "DISPLAY",         "value": ":0" },
@@ -16,18 +15,15 @@
       ],
       "externalConsole": false,
       "MIMode": "gdb",
-      "setupCommands": [
-        { "description": "Pretty-print", "text": "-enable-pretty-printing" }
-      ],
-      "preLaunchTask": "MilCAM build"
+      "preLaunchTask": "MilCAM install (DESTDIR=_inst)"
     },
     {
-      "name": "(Linux) Smoke: test_codesys_bridge",
-      "type": "cppdbg",
+      "name": "pytest (overlay-only)",
+      "type": "python",
       "request": "launch",
-      "program": "${workspaceFolder}/build/bin/test_codesys_bridge",
-      "cwd": "${workspaceFolder}",
-      "MIMode": "gdb"
+      "module": "pytest",
+      "args": [ "-v", "tests/python" ],
+      "cwd": "${workspaceFolder}"
     }
   ]
 }

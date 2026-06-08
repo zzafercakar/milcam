@@ -1,154 +1,141 @@
-# CodeSys Bridge Protocol
+# CodesysBridge Protokolu
 
-MilCAM ↔ CodeSys 3.5 runtime iletişim sözleşmesi. İki kanal: drop folder ve
-OPC UA. Bu dosya kanalların **kontrat seviyesinde** ne yaptığını anlatır.
-İmplementasyon: `adapter/src/CodesysBridge.cpp`.
+`milcam/CodesysBridge/` — MilCAM ↔ CodeSys 3.5 runtime arasi iletisim
+katmani. Pure C++ core + CPython binding. FreeCAD'in MilCAM workbench'i
+icinden `import CodesysBridge` ile cagrilir.
 
-## Kanal 1: G-code Drop Folder
+## Iki Kanal
 
-### Yer
-`/var/cnc/jobs/`  (cihazda; konfigürablle `CodesysBridge::setDropFolder`).
+### Kanal 1: G-code Drop Folder (gercek)
 
-### Atomic Write Protokolü
-1. MilCAM hedef adi `<jobId>.gcode` belirler (örn. `job_42.gcode`).
-2. Geçici dosyaya yazar: `<jobId>.gcode.tmp`.
-3. `QFile::rename` ile atomic taşır (POSIX `rename` garantili atomicity).
-4. Tüketici (PLC) her zaman tam dosya görür veya hiç görmez — yarı yazılmış
-   dosya yok.
+**Konum:** `/var/cnc/jobs/` (default, `Bridge.drop_folder` ile override).
 
-### PLC tarafı
+**Yazma protokolu (atomic):**
+
+1. MilCAM `dropGCode(jobId, gcode)` cagirir.
+2. `<dropFolder>/<jobId>.gcode.tmp` dosyasina yazar.
+3. POSIX `rename()` ile `.tmp` → `.gcode` (atomic).
+4. PLC her zaman tam veya hic dosya gorur, yarim gormez.
+
+**PLC tarafi (CodeSys ST):**
+
 ```iecst
 VAR
     smcReadFile : SMC_ReadNCFile2;
     smcInterp   : SMC_NCInterpreter;
-    sFile       : STRING := '/var/cnc/jobs/job_42.gcode';
+    sFile       : STRING(256);
+    xLoadJob    : BOOL;
 END_VAR
 
+(* HMI butonu xLoadJob set eder *)
 smcReadFile(
-    bExecute := xLoadJob,
+    bExecute  := xLoadJob,
     sFileName := sFile,
-    pStartPosition := pPos,
+    ...
 );
 ```
 
-### Temizlik
-- MilCAM eski jobs'u temizler (`/var/cnc/jobs/` içinde > 30 günlükleri).
-- Faz 5'te disk dolma senaryosu — `CodesysBridge::pruneOldJobs(int days)` ekle.
+`sFile`, OPC UA `MilCAM.JobReadyPath` sembolunden okunur.
 
-### Sınırlamalar
-- Drop folder PLC ve MilCAM'in ortak görebileceği bir mount olmalı.
-- NFS mount yapılırsa async write nedeniyle atomic garanti zayıflar; `sync`
-  veya local FS tercih edilmeli.
+### Kanal 2: OPC UA (Faz 4'te gercek, su an stub)
 
----
+**Endpoint:** `opc.tcp://192.168.1.123:4840` (varsayilan).
 
-## Kanal 2: OPC UA
+**Bridge.connect():** Faz 4'te open62541 client_connect. Su an no-op.
 
-### Endpoint
-`opc.tcp://192.168.1.123:4840` (varsayılan; konfigüre edilebilir).
+**Sembol sozlesmesi** (PLC tarafinda kurulacak):
 
-### Security
-- Faz 3 ilk surum: **Anonymous + None** (test için).
-- Faz 5: Username/password + Basic256Sha256 zorunlu.
+| Sembol                       | Tip     | Yon          | Aciklama                              |
+|------------------------------|---------|--------------|---------------------------------------|
+| `MilCAM.JobReadyPath`        | STRING  | MilCAM → PLC | Yeni G-code dosya yolu                |
+| `MilCAM.JobId`               | STRING  | MilCAM → PLC | Job kimligi (insan-okur)              |
+| `MilCAM.RunRequest`          | BOOL    | MilCAM → PLC | True = simdi basla                   |
+| `MilCAM.CancelRequest`       | BOOL    | MilCAM → PLC | True = durdur                         |
+| `MilCAM.AppHeartbeat`        | UDINT   | MilCAM → PLC | Saniyede 1 artar (watchdog)           |
+| `PLC.MachineState`           | UDINT   | PLC → MilCAM | 0=Idle 1=Running 2=Paused 3=Error 4=EStop |
+| `PLC.CurrentLine`            | UDINT   | PLC → MilCAM | Calisan G-code satir no               |
+| `PLC.CurrentBlock`           | STRING  | PLC → MilCAM | Aktif blok (debug)                    |
+| `PLC.ErrorCode`              | UDINT   | PLC → MilCAM | 0=OK                                  |
+| `PLC.ErrorMessage`           | STRING  | PLC → MilCAM | Insan-okur                            |
+| `PLC.SpindleSpeed`           | REAL    | PLC → MilCAM | RPM gerçek                            |
+| `PLC.FeedOverride`           | REAL    | PLC → MilCAM | 0.0-2.0                               |
 
-### Symbol Tablosu
+### Watchdog
 
-PLC tarafında `Application.GVL_MilCAM` veya benzer bir GVL açılmalı.
+MilCAM saniyede `MilCAM.AppHeartbeat++` yazar. PLC 10 saniye gormezse
+"MilCAM koptu" alarmi.
 
-| Symbol                       | Type    | Read/Write | Niçin                                |
-| ---------------------------- | ------- | ---------- | ------------------------------------ |
-| `MilCAM.JobReadyPath`        | STRING  | MilCAM → PLC | Yeni G-code dosya yolu             |
-| `MilCAM.JobId`               | STRING  | MilCAM → PLC | İnsan-okur job kimliği             |
-| `MilCAM.RunRequest`          | BOOL    | MilCAM → PLC | True = "şimdi başlat"              |
-| `MilCAM.CancelRequest`       | BOOL    | MilCAM → PLC | True = "durdur"                    |
-| `MilCAM.AppHeartbeat`        | UDINT   | MilCAM → PLC | her saniye artar (watchdog)        |
-| `PLC.MachineState`           | UDINT   | PLC → MilCAM | enum: 0 Idle, 1 Running, 2 Paused, 3 Error, 4 EStop |
-| `PLC.CurrentLine`            | UDINT   | PLC → MilCAM | NC interpretörünün şu anki satırı   |
-| `PLC.CurrentBlock`           | STRING  | PLC → MilCAM | Aktif G-code bloğu (debug)         |
-| `PLC.ErrorCode`              | UDINT   | PLC → MilCAM | 0 = OK                              |
-| `PLC.ErrorMessage`           | STRING  | PLC → MilCAM | İnsan-okur                          |
-| `PLC.SpindleSpeed`           | REAL    | PLC → MilCAM | RPM, gerçek                        |
-| `PLC.FeedOverride`           | REAL    | PLC → MilCAM | 0.0 - 2.0 (operator override)      |
+## API Yuzeyi (Python)
 
-### MilCAM → PLC: Job Submit Sırası
+```python
+import CodesysBridge
 
-```
-1. dropGCode(jobId, gcode)         → /var/cnc/jobs/<jobId>.gcode
-2. setSymbol(MilCAM.JobReadyPath, path)
-3. setSymbol(MilCAM.JobId, jobId)
-4. setSymbol(MilCAM.RunRequest, TRUE)   ; PLC bunu görüp set FALSE eder
-```
+# Module-level
+CodesysBridge.raise_window("TargetVisu")        # wmctrl raise
 
-### MilCAM ← PLC: State Subscription
+# Bridge instance — bir tane FreeCAD oturumunda
+bridge = CodesysBridge.Bridge()
+bridge.endpoint_url = "opc.tcp://192.168.1.123:4840"
+bridge.drop_folder  = "/var/cnc/jobs"
 
-```
-1. Connect → CreateSubscription(publishingInterval=200ms)
-2. MonitorItem: PLC.MachineState, PLC.CurrentLine, PLC.EStop
-3. Notification gelince Qt signal emit:
-   - machineStateChanged
-   - currentLineChanged
-   - emergencyStopActivated (special path)
-```
+# Drop folder (her zaman calisir)
+path = bridge.drop_gcode("job_42", gcode_text)   # → "/var/cnc/jobs/job_42.gcode"
+removed = bridge.prune_old_jobs(30)              # son 30 gunden eskileri sil
 
-### Heartbeat / Watchdog
+# OPC UA (Faz 4'te gercek)
+ok = bridge.connect()                            # False (stub)
+if bridge.is_connected():
+    bridge.notify_job_ready(path)
+state = bridge.machine_state()                   # int (STATE_* sabitleri)
+line  = bridge.current_line()
+bridge.disconnect()
 
-MilCAM her saniye `MilCAM.AppHeartbeat++` yazar.
-PLC bunu görmezse 10 saniye sonra "MilCAM bağlantısı koptu" alarmı verir.
-
-### Bağlantı Kopma Senaryosu
-
-- MilCAM connect kaybederse: UI'da kırmızı banner, "PLC: disconnected".
-- 5 saniyede bir reconnect denenir.
-- Drop folder yazımı (`dropGCode`) bağımsız çalışır — bağlantı yokken bile
-  dosya yazılır, sadece `notifyJobReady` no-op olur.
-
----
-
-## Window Switching (HMI ↔ CAM)
-
-Aslında bu da CodesysBridge'in sorumluluğu (CodeSys'le iletişim olduğu için).
-
-### CAM → HMI yön
-MilCAM `[HMI]` butonu:
-```cpp
-QProcess::execute("wmctrl", { "-a", "TargetVisu" });
+# Sabit enum'lar
+CodesysBridge.STATE_IDLE    # 1
+CodesysBridge.STATE_RUNNING # 2
+CodesysBridge.STATE_ESTOP   # 5
 ```
 
-### HMI → CAM yön
-TargetVisu içinde "Open CAM" butonu — IEC ST kodu:
+## ABI Disiplini
+
+CodesysBridge **CPython stable ABI** ile yazildi (`#define Py_LIMITED_API
+0x030A0000` *eklenmedi* — ama API kullanimi stable subset icinde). Bu
+sayede:
+- Bir kere derlenen `.so` Python 3.10+ ile calisir.
+- FreeCAD versiyonlari arasindaki Python farklilarinda kirilmaz.
+- Cross-build sirasinda Python version uyumu tek koşul.
+
+## Window Switching
+
+`raise_window(title_substring)` shell exec ile `wmctrl -a "<title>"`
+cagirir. `wmctrl` cihazda yok ise `Bridge::raiseWindow` False doner ve
+SwitchToHmi komutu Console'a warning yazar.
+
+CodeSys tarafindan da symmetric: TargetVisu "Open CAM" butonu:
 ```iecst
 SysProcessExecuteCommand2('wmctrl -a MilCAM', ADR(result));
 ```
 
-Bunun için CodeSys cihazında:
-```ini
-; /etc/codesys*/CODESYSControl.cfg
-[SysProcess]
-Command=AllowAll
-```
+`/etc/codesys*/CODESYSControl.cfg` icinde `[SysProcess] Command=AllowAll`
+gerek.
 
-## E-Stop Davranışı
+## E-Stop Davranisi
 
-PLC EStop'a basıldığında:
-1. `PLC.EStop` = TRUE
-2. MilCAM subscription notification alır
-3. UI tam ekran kırmızı banner: "EMERGENCY STOP — Reset on machine"
-4. Yeni job submit edilmesi engellenir (MilCAM-side guard)
-5. EStop reset edilince banner kaybolur
-
----
+PLC `PLC.EStop = TRUE` set ettiginde (Faz 4):
+1. Subscription notification gelir
+2. Python callback FreeCAD `MainWindow`'a QMessageBox.critical gosterir
+3. Yeni Send-to-CodeSys submit'lerini engelle (komut IsActive false)
+4. EStop reset edilince banner kalkar
 
 ## Test Stratejisi
 
-### Birim
-- `tests/test_codesys_bridge.cpp` — dropGCode atomic rename, klasör yokken
-  oluşturma, hatalı izin durumu.
-
-### Entegrasyon (Faz 3)
-- Yerel `open62541` server ile mock PLC: subscription, write, notification.
-- Heartbeat watchdog: 10 saniye yazma kes, mock PLC alarm bekle.
-
-### Saha (Faz 5)
-- Gerçek CodeSys runtime, 24 saat sürekli.
-- EStop trigger, recover.
-- Bağlantı kopma (ethernet kablo çıkar/tak).
+- **Unit (pytest):**
+  - `tests/python/test_codesys_bridge.py` — drop folder atomic, sembolik temizlik
+  - `tests/python/test_codesys_post.py` — postprocessor argumanlari, header
+- **Integration (Faz 4):**
+  - Yerel `open62541` mock server ile subscription test
+  - 10 sn watchdog timeout dogrulamasi
+- **Saha (Faz 5):**
+  - Gerçek CodeSys runtime, 24 saat sürekli
+  - Ethernet kablo cikar/tak — reconnect logic
+  - EStop fiziksel test

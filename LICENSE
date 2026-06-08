@@ -3,19 +3,24 @@ MilCAM — License Notice
 
 This repository contains code under two licenses:
 
-1. Proprietary (adapter/, app/, cam/, ui/, util/, viewport/, scripts/, tests/,
-   resources/ excluding sub-licensed icons):
+1. Proprietary
+   Files under milcam/CodesysBridge/ and the non-derivative portions of
+   milcam/Mod/MilCAM/ (Init.py, InitGui.py, Commands/*).
        Copyright © 2026 MilCAM authors.
        All rights reserved. Redistribution, modification, or commercial use
-       requires written permission from the copyright holders.
+       requires written permission.
 
-2. LGPL-2.1-or-later (freecad/ subtree):
-       Portions of FreeCAD (https://www.freecad.org/) copied verbatim with
-       minimal modifications. See freecad/LICENSE for the full LGPL-2.1 text.
-       Each .cpp/.h file in freecad/ retains its original copyright header.
+2. LGPL-2.1-or-later
+   The CODESYS postprocessor (milcam/Mod/MilCAM/PostProcessor/codesys_post.py)
+   is a derivative of FreeCAD's postprocessor templates and inherits the
+   FreeCAD license.
 
-   If you redistribute MilCAM, you must comply with LGPL-2.1 obligations
-   regarding the freecad/ subtree:
-     - Provide the source code of the freecad/ subtree (or a written offer).
-     - Permit users to relink against modified versions of the FreeCAD
-       libraries.
+   When MilCAM is distributed as a binary built on top of FreeCAD source,
+   the resulting FreeCAD binary remains LGPL-2.1-or-later. You must comply
+   with LGPL obligations regarding the FreeCAD portions:
+     - Provide source code of the FreeCAD subset built into the binary, or
+       a written offer.
+     - Permit relinking against modified versions of the FreeCAD libraries.
+
+FreeCAD itself is NOT bundled in this repository — it is referenced by
+CMake through FREECAD_SOURCE_DIR and built in place. See README.md.

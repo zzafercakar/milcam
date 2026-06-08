@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
+  <rect x="4" y="4" width="56" height="56" rx="8" fill="#1976D2" stroke="#0D47A1" stroke-width="2"/>
+  <text x="32" y="28" text-anchor="middle" font-family="DejaVu Sans, sans-serif"
+        font-weight="700" font-size="13" fill="#FFFFFF">MIL</text>
+  <text x="32" y="46" text-anchor="middle" font-family="DejaVu Sans, sans-serif"
+        font-weight="700" font-size="13" fill="#FFFFFF">CAM</text>
+</svg>

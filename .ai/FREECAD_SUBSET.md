@@ -1,89 +1,102 @@
-# FreeCAD Slim Subset — What MilCAM Carries
+# FreeCAD Modul Alt Kumesi — Hangi Modul ON, Hangi OFF?
 
-CADNC tüm büyük FreeCAD App modüllerini (`Base`, `App`, `Material`, `Part`,
-`Sketcher`, `PartDesign`) inşa eder. MilCAM bilinçli olarak daha azını alır.
+MilCAM, FreeCAD'in CMake `BUILD_<X>` flag'lerini overrider eder. Bu dosya
+hangi flag hangi modulu kontrol ediyor ve niye dahil/haric ettigimizi
+belgeler.
 
-## Dahil Edilen Modüller
+## ON Tutulanlar (CAM is akisi icin elzem)
 
-| Modül                  | Niçin gerekli                                    | Konum                       |
-| ---------------------- | ------------------------------------------------ | --------------------------- |
-| `freecad/Base`         | Math, IO, type system, Python interpreter init   | `freecad/Base/`             |
-| `freecad/App`          | Document, Property, Transaction (Part'ın altyapı)| `freecad/App/`              |
-| `freecad/Mod/Material/App` | Part'ın bağımlılığı (material catalogue)     | `freecad/Mod/Material/App/` |
-| `freecad/Mod/Part/App` | TopoShape, STEP/IGES/BREP importers, geometry   | `freecad/Mod/Part/App/`     |
+| Flag                | Niye                                                          |
+|---------------------|---------------------------------------------------------------|
+| `BUILD_GUI`         | FreeCAD penceresinin kendisi. Olmazsa command-line only.      |
+| `BUILD_PART`        | STEP/IGES/BREP import + Part::TopoShape                        |
+| `BUILD_PART_DESIGN` | Body / parametrik feature — CAM bunlardan face seçer          |
+| `BUILD_SKETCHER`    | 2D sketches — bazi Profile/Engrave ops sketches gerektirir    |
+| `BUILD_CAM`         | THE CAM workbench (FreeCAD 1.0+ adlandirma; eskiden BUILD_PATH)|
+| `BUILD_DRAFT`       | DXF import + 2D primitives. CAM Profile ops DXF'ten beslenebilir |
+| `BUILD_MESH`        | STL import                                                    |
+| `BUILD_MESH_PART`   | Mesh ↔ Part interop (STL → surface dönüsümü)                  |
+| `BUILD_MATERIAL`    | Part'in zorunlu bagimliligi                                   |
+| `BUILD_SPREADSHEET` | Tool tables, job parametre tablosu                            |
+| `BUILD_MEASURE`     | Operatorun mesafe/açı kontrolü için                           |
+| `BUILD_IMPORT`      | STEP/IGES/BREP importer (Part'in I/O katmani)                 |
 
-`freecad/3rdParty/` içinden tutulan:
-- `PyCXX` — Python C++ binding (Base bağımlılığı)
-- `zipios++` — ZIP IO (Base Reader/Writer için)
-- `FastSignals` — sinyal kütüphanesi
-- `json` — JSON (App'in document IO için)
-- `lru` — LRU cache helpers
-- `OndselSolver` — **gerçekte SADECE Sketcher tarafından kullanılır** ama
-  cmake glob ile geldiği için bırakıldı; ileride budanabilir.
+## OFF Yapilanlar (kapsamim disinda — agirlik kazanci)
 
-## Hariç Bırakılanlar (KASITLI)
+| Flag                  | Modul          | Niye OFF                                  |
+|-----------------------|----------------|-------------------------------------------|
+| `BUILD_FEM`           | FEM            | Sonlu eleman analizi — CAM is akisinda yok |
+| `BUILD_BIM`           | BIM            | Yapı tasarımı                              |
+| `BUILD_ASSEMBLY`      | Assembly       | Coklu part montaji — CAM kapsamı dışı       |
+| `BUILD_TECHDRAW`      | TechDraw       | 2D teknik resim üretimi — CAM is akisi yok |
+| `BUILD_DRAWING`       | Drawing        | Eski TechDraw'ın deprecated halefi          |
+| `BUILD_SURFACE`       | Surface        | Ileri yuzey modelleme — CAM'in min temasi gerek |
+| `BUILD_OPENSCAD`      | OpenSCAD       | OpenSCAD interop                            |
+| `BUILD_PLOT`          | Plot           | Matplotlib plotting                         |
+| `BUILD_ROBOT`         | Robot          | Robot kinematik simulasyon                  |
+| `BUILD_WEB`           | Web            | QtWebEngine — agir + saha cihazinda anlamsiz |
+| `BUILD_HELP`          | Help           | QtWebEngine — yine agir + kiosk modda anlamsiz |
+| `BUILD_START`         | Start          | Start page — kiosk default WB ile gereksiz |
+| `BUILD_INSPECTION`    | Inspection     | Mesh karşılaştırma                          |
+| `BUILD_JTREADER`      | JtReader       | Siemens JT format (default OFF zaten)       |
+| `BUILD_MATERIAL_EXTERNAL` | -          | Harici materyal DB'leri                     |
+| `BUILD_POINTS`        | Points         | Nokta bulutu                                |
+| `BUILD_REVERSEENGINEERING` | RE        | Ters muhendislik                            |
+| `BUILD_SHOW`          | Show           | Görünürlük automation                       |
+| `BUILD_TUX`           | Tux            | Tema/palette araci                          |
+| `BUILD_ADDONMGR`      | AddonManager   | Saha cihazina addon kurmuyoruz              |
+| `BUILD_CLOUD`         | Cloud          | Bulut entegrasyonu (zaten default OFF)      |
+| `BUILD_VR`            | VR             | Oculus support (zaten default OFF)          |
+| `BUILD_TEST`          | Test           | FreeCAD'in test workbench'i                 |
+| `BUILD_SANDBOX`       | Sandbox        | Dev test                                    |
+| `BUILD_TEMPLATE`      | Template       | Dev test                                    |
+| `BUILD_FLAT_MESH`     | -              | Mesh flattening (mesh modulu zaten yetiyor) |
+| `BUILD_DESIGNER_PLUGIN`| -             | Qt Designer plugin (dev)                    |
+| `BUILD_TRACY_FRAME_PROFILER` | -       | Tracy profiler                              |
 
-| Modül                  | Niçin bırakıldı                                           |
-| ---------------------- | --------------------------------------------------------- |
-| `freecad/Mod/Sketcher`  | MilCAM 2D constraint geometry yazmaz                     |
-| `freecad/Mod/PartDesign`| Parametrik feature tree MilCAM scope dışı                |
-| `freecad/Gui`           | MilCAM kendi Qt6 UI'sını kullanır                        |
-| `freecad/Tools`         | Build/release araçları, runtime'da gerek yok             |
-| `freecad/Build`         | CMake build artefactları                                 |
+## Build Boyut Hedefi
 
-## CMake Etkisi
+Stock FreeCAD 1.2 install: **~3.5 GB** (lib + share + Python deps).
+MilCAM hedef: **< 1.5 GB** (modul stripleme + agir QtWeb dep cikartma).
 
-`freecad/CMakeLists.txt` içinde:
-```cmake
-add_subdirectory(Base)
-add_subdirectory(App)
-add_subdirectory(Mod/Material/App)
-add_subdirectory(Mod/Part/App)
-# Sketcher + PartDesign deliberately not included.
-```
+Asagidaki agir bilesenleri OFF yaparak Qt Web Engine ve Netgen'den
+kurtuluyoruz:
+- `BUILD_HELP=OFF`  → QtWebEngineCore, QtWebEngineWidgets gerekmez
+- `BUILD_WEB=OFF`   → QtWebEngineCore gerekmez
+- `BUILD_FEM=OFF`   → Netgen ve VTK gerekmez (cok agir)
+- `BUILD_BIM=OFF`   → IfcOpenShell gerekmez
 
-Üst CMakeLists'ta `milcam_adapter` link satırı:
-```cmake
-target_link_libraries(milcam_adapter PUBLIC
-    # NB: Sketcher / PartDesign deliberately NOT linked.
-    Part Materials FreeCADApp FreeCADBase
-    Qt6::Core Qt6::Quick
-)
-```
+Bu dort modul tek basina ~1.5 GB'lik dep azaltir.
 
-## Sonuç: Boyut Tasarrufu
+## Inter-Module Bagimlilik Riskleri
 
-| Build                | Disk    | RAM idle (tahmin) |
-| -------------------- | ------- | ----------------- |
-| CADNC full           | ~83 MB  | ~250 MB           |
-| MilCAM slim          | ~50 MB (hedef) | ~150 MB    |
+FreeCAD'in modulleri kismi gevsek baglidir ama bazi tek-yon bagimliliklar
+var:
+- `Inspection`  → `Mesh`, `Part`. (Inspection OFF, dolayli sorun yok)
+- `BIM`         → `Arch`, `Draft`. (BIM OFF; Draft ON kaliyor)
+- `Robot`       → `Part`. (Robot OFF; Part ON kaliyor)
+- `Mesh_Part`   → `Mesh`, `Part`. (ikisi de ON)
+- `Path/CAM`    → `Part`, `PartDesign`, `Sketcher`, `Draft`. **Hepsi ON**.
+- `TechDraw`    → `Part`, `Draft`. (TechDraw OFF, sorun yok)
 
-Sketcher tek başına `~48K satır`, PartDesign `~20K satır`. Disk +
-RAM kazancı belirgin.
+Faz 1'de gercek build'e gectigimizde inter-module link hatalari cikabilir
+— o zaman bu listeyi guncelle.
 
-## CADNC ile Senkronizasyon Disiplini
+## Eger Bir Module Geri Eklemek Gerekirse
 
-CADNC `freecad/` ağacı upstream FreeCAD 1.2'den alındı. MilCAM `freecad/` aynı
-ağacın **subset'i**. Bu yüzden:
+Mesela kullanici "DXF cizebileyim" derse Draft yetersizse ve Sketcher acik
+hali gerekirse: Sketcher zaten ON. Tum Mod/MilCAM workbench yanindaki
+"keep" listesinde Sketcher var. Yani gizli ama eğer ihtiyac olursa
+Workbench Selector'de "Sketcher" workbench'i secip kullanmasi mumkun
+(operatore kapali, gelistirici-mod).
 
-1. CADNC upstream rebase yaparsa, MilCAM da aynı `Base/`, `App/`,
-   `Mod/Material/`, `Mod/Part/` dosyalarını alır.
-2. Sketcher veya PartDesign **DAHA SONRA EKLEME ZORUNLULUĞU OLURSA**
-   (kapsam ekleme), CADNC'den olduğu gibi getirilir.
-3. MilCAM `freecad/` içinde kendi başına değişiklik yapma — değişiklikler
-   önce CADNC'ye, sonra MilCAM'e portla.
+DXF yazmak (export) gerekirse: Draft'in DXF export'u var, zaten ON.
 
-## Upgrade Pathway: Sketcher Geri Eklenirse?
+3D printing (Slic3r integration) gerekirse: ayri workbench, MilCAM
+scope'unda yok.
 
-Kararı tetikleyen olası senaryo: operator sahada basit 2D çizim de yapmak
-istiyorsa. Adımlar:
-1. `MILCAM_ENABLE_SKETCHER=ON` flag'i CMakeLists'a ekle.
-2. CADNC'den `freecad/Mod/Sketcher/App/` ve `freecad/3rdParty/OndselSolver/`
-   kopyala.
-3. `freecad/CMakeLists.txt`'e `add_subdirectory(Mod/Sketcher/App)` koy.
-4. Adapter'da silmeden bıraktığın `SketchFacade.h` dosyalarını geri getir.
-5. UI'a Sketcher toolbar ekle.
+## Asimi Kontrol Mekanizmasi
 
-Karar verilmeden önce: footprint büyür (~50 MB disk + ~50 MB RAM),
-karmaşıklık artar, kullanıcı eğitimi gerek. Default cevap: **HAYIR**, ofis
-çizsin.
+Build sonrasi `find install/usr/local/lib -name "*.so" | xargs du -sh`
+calistir. Beklenmedik bir Mod*.so cikiyorsa BUILD_<X> flag'ini bir kere
+daha goz at.
