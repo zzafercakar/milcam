@@ -1,0 +1,21 @@
+MilCAM — License Notice
+=======================
+
+This repository contains code under two licenses:
+
+1. Proprietary (adapter/, app/, cam/, ui/, util/, viewport/, scripts/, tests/,
+   resources/ excluding sub-licensed icons):
+       Copyright © 2026 MilCAM authors.
+       All rights reserved. Redistribution, modification, or commercial use
+       requires written permission from the copyright holders.
+
+2. LGPL-2.1-or-later (freecad/ subtree):
+       Portions of FreeCAD (https://www.freecad.org/) copied verbatim with
+       minimal modifications. See freecad/LICENSE for the full LGPL-2.1 text.
+       Each .cpp/.h file in freecad/ retains its original copyright header.
+
+   If you redistribute MilCAM, you must comply with LGPL-2.1 obligations
+   regarding the freecad/ subtree:
+     - Provide the source code of the freecad/ subtree (or a written offer).
+     - Permit users to relink against modified versions of the FreeCAD
+       libraries.

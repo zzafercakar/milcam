@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#67E8F9"/>
+      <stop offset="100%" stop-color="#06B6D4"/>
+    </linearGradient>
+  </defs>
+  <!-- Top face of cube (highlighted) -->
+  <path d="M12 3L3 8v8l9 5 9-5V8z" fill="none" stroke="#0891B2" stroke-width="1"/>
+  <path d="M12 3L3 8l9 5 9-5z" fill="url(#g)" stroke="#0891B2" stroke-width="1"/>
+  <path d="M3 8l9 5v8" fill="none" stroke="#0891B2" stroke-width="0.8" opacity="0.5"/>
+  <path d="M21 8l-9 5v8" fill="none" stroke="#0891B2" stroke-width="0.8" opacity="0.5"/>
+  <path d="M4 8.5h6" stroke="rgba(255,255,255,0.5)" stroke-width="0.8" stroke-linecap="round"/>
+</svg>

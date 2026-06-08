@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">
+  <!-- X axis -->
+  <line x1="12" y1="12" x2="22" y2="12" stroke="#EF4444" stroke-width="2.5" stroke-linecap="round"/>
+  <path d="M19 9l3 3-3 3" stroke="#EF4444" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  <!-- Y axis -->
+  <line x1="12" y1="12" x2="12" y2="2" stroke="#22C55E" stroke-width="2.5" stroke-linecap="round"/>
+  <path d="M9 5l3-3 3 3" stroke="#22C55E" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  <!-- Z axis -->
+  <line x1="12" y1="12" x2="5" y2="19" stroke="#3B82F6" stroke-width="2.5" stroke-linecap="round"/>
+  <!-- Origin -->
+  <circle cx="12" cy="12" r="2.5" fill="white" stroke="#374151" stroke-width="1"/>
+</svg>

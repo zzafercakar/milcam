@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#60A5FA"/>
+      <stop offset="100%" stop-color="#2563EB"/>
+    </linearGradient>
+  </defs>
+  <circle cx="9" cy="12" r="7" fill="url(#g)" stroke="#1E40AF" stroke-width="0.8" opacity="0.8"/>
+  <circle cx="15" cy="12" r="7" fill="url(#g)" stroke="#1E40AF" stroke-width="0.8" opacity="0.8"/>
+  <!-- Overlap highlight -->
+  <path d="M12.5 6.1a7 7 0 0 0-1 11.8 7 7 0 0 0 1-11.8z" fill="rgba(255,255,255,0.3)"/>
+</svg>

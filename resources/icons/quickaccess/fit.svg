@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#818CF8"/>
+      <stop offset="100%" stop-color="#6366F1"/>
+    </linearGradient>
+  </defs>
+  <!-- Four corner arrows -->
+  <path d="M3 8V4a1 1 0 0 1 1-1h4" stroke="url(#g)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  <path d="M16 3h4a1 1 0 0 1 1 1v4" stroke="url(#g)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  <path d="M21 16v4a1 1 0 0 1-1 1h-4" stroke="url(#g)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  <path d="M8 21H4a1 1 0 0 1-1-1v-4" stroke="url(#g)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  <!-- Center cube hint -->
+  <rect x="9" y="9" width="6" height="6" rx="1" fill="#C7D2FE" stroke="#6366F1" stroke-width="0.8"/>
+</svg>

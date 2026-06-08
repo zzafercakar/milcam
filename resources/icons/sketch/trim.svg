@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">
+  <!-- Boundary edge (horizontal) -->
+  <line x1="2" y1="12" x2="22" y2="12" stroke="#475569" stroke-width="1.8" stroke-linecap="round"/>
+  <!-- Kept segments of the trimmed edge (solid green) -->
+  <line x1="6" y1="4" x2="6" y2="10" stroke="#10B981" stroke-width="2.2" stroke-linecap="round"/>
+  <line x1="6" y1="14" x2="6" y2="21" stroke="#10B981" stroke-width="2.2" stroke-linecap="round"/>
+  <!-- Removed segment (dashed red) -->
+  <line x1="6" y1="10.5" x2="6" y2="13.5" stroke="#EF4444" stroke-width="2" stroke-linecap="round" stroke-dasharray="1.5,1"/>
+  <!-- Intersection dots -->
+  <circle cx="6" cy="12" r="1.5" fill="#F59E0B" stroke="#D97706" stroke-width="0.6"/>
+  <!-- Second boundary + trim -->
+  <line x1="12" y1="6" x2="20" y2="18" stroke="#475569" stroke-width="1.5" stroke-linecap="round"/>
+  <!-- Scissors hint -->
+  <path d="M16 6 L18 9 M18 6 L16 9" stroke="#EF4444" stroke-width="1.2" stroke-linecap="round"/>
+</svg>

@@ -1,0 +1,20 @@
+build/
+build-*/
+.cache/
+.vscode/.cache/
+compile_commands.json
+CMakeUserPresets.json
+*.user
+.idea/
+*.swp
+*.tmp
+*.log
+.DS_Store
+
+# CodeSys / runtime artefacts that may appear during testing
+/var/cnc/jobs/*.gcode
+*.tmp.gcode
+
+# AI scratch
+.remember/
+.codex/

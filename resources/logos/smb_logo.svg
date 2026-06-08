@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <!-- Swirl blades -->
+  <g fill="#1A1A1A">
+    <!-- Blade 1 (top-right) -->
+    <path d="M100,10 C130,10 160,30 170,55 C155,25 125,18 100,30 C120,15 100,10 100,10 Z"/>
+    <path d="M170,55 C185,80 185,115 170,145 C180,110 165,80 145,65 C165,75 170,55 170,55 Z"/>
+    <!-- Blade 2 (bottom-right) -->
+    <path d="M170,145 C155,175 125,190 100,190 C135,185 160,165 160,140 C165,165 170,145 170,145 Z"/>
+    <!-- Blade 3 (bottom-left) -->
+    <path d="M100,190 C70,190 40,170 30,145 C45,175 75,182 100,170 C80,185 100,190 100,190 Z"/>
+    <path d="M30,145 C15,120 15,85 30,55 C20,90 35,120 55,135 C35,125 30,145 30,145 Z"/>
+    <!-- Blade 4 (top-left) -->
+    <path d="M30,55 C45,25 75,10 100,10 C65,15 40,35 40,60 C35,35 30,55 30,55 Z"/>
+  </g>
+  <!-- Red circle -->
+  <circle cx="100" cy="100" r="58" fill="#E53935"/>
+  <!-- SMB text -->
+  <text x="100" y="112" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-weight="bold" font-size="42" fill="white" letter-spacing="-1">smb</text>
+</svg>

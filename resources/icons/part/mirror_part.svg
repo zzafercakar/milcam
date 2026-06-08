@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#60A5FA"/>
+      <stop offset="100%" stop-color="#2563EB"/>
+    </linearGradient>
+  </defs>
+  <!-- Original shape -->
+  <path d="M3 7h8v14H3z" fill="url(#g)" stroke="#1E40AF" stroke-width="0.7"/>
+  <!-- Mirror line -->
+  <line x1="12" y1="3" x2="12" y2="23" stroke="#F59E0B" stroke-width="1.5" stroke-dasharray="3 2"/>
+  <!-- Mirrored shape -->
+  <path d="M13 7h8v14h-8z" fill="url(#g)" stroke="#1E40AF" stroke-width="0.7" opacity="0.5"/>
+</svg>

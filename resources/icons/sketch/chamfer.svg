@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="none">
+  <!-- Two edges meeting at corner -->
+  <line x1="4" y1="20" x2="4" y2="11" stroke="#475569" stroke-width="2" stroke-linecap="round"/>
+  <line x1="4" y1="20" x2="14" y2="20" stroke="#475569" stroke-width="2" stroke-linecap="round"/>
+  <!-- Chamfer: straight cut at 45 degrees -->
+  <line x1="4" y1="11" x2="11" y2="4" stroke="#F59E0B" stroke-width="2.5" stroke-linecap="round"/>
+  <line x1="11" y1="4" x2="20" y2="4" stroke="#475569" stroke-width="2" stroke-linecap="round"/>
+  <!-- Original corner dashed -->
+  <line x1="4" y1="11" x2="4" y2="4" stroke="#9CA3AF" stroke-width="1" stroke-dasharray="2,2"/>
+  <line x1="4" y1="4" x2="11" y2="4" stroke="#9CA3AF" stroke-width="1" stroke-dasharray="2,2"/>
+  <!-- D indicator (distance) -->
+  <text x="9" y="10" font-size="7" font-weight="bold" fill="#D97706" font-family="sans-serif">D</text>
+</svg>

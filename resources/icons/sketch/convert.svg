@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">
+  <!-- Original edge -->
+  <line x1="4" y1="12" x2="20" y2="12" stroke="#94A3B8" stroke-width="2" stroke-dasharray="3 2"/>
+  <!-- Converted entity -->
+  <line x1="4" y1="16" x2="20" y2="16" stroke="#2563EB" stroke-width="2.5"/>
+  <!-- Arrow between -->
+  <line x1="12" y1="11" x2="12" y2="14" stroke="#16A34A" stroke-width="1.5"/>
+  <path d="M10 13l2 2 2-2" stroke="#16A34A" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+</svg>

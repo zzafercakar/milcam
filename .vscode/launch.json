@@ -1,0 +1,33 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "(Linux) Launch MilCAM",
+      "type": "cppdbg",
+      "request": "launch",
+      "program": "${workspaceFolder}/build/milcam",
+      "args": [],
+      "stopAtEntry": false,
+      "cwd": "${workspaceFolder}",
+      "environment": [
+        { "name": "DISPLAY",         "value": ":0" },
+        { "name": "QT_QPA_PLATFORM", "value": "xcb" },
+        { "name": "QT_IM_MODULE",    "value": "qtvirtualkeyboard" }
+      ],
+      "externalConsole": false,
+      "MIMode": "gdb",
+      "setupCommands": [
+        { "description": "Pretty-print", "text": "-enable-pretty-printing" }
+      ],
+      "preLaunchTask": "MilCAM build"
+    },
+    {
+      "name": "(Linux) Smoke: test_codesys_bridge",
+      "type": "cppdbg",
+      "request": "launch",
+      "program": "${workspaceFolder}/build/bin/test_codesys_bridge",
+      "cwd": "${workspaceFolder}",
+      "MIMode": "gdb"
+    }
+  ]
+}

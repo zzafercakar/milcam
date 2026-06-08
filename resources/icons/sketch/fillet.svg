@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="none">
+  <!-- Two edges meeting at corner -->
+  <line x1="4" y1="20" x2="4" y2="10" stroke="#475569" stroke-width="2" stroke-linecap="round"/>
+  <line x1="4" y1="20" x2="14" y2="20" stroke="#475569" stroke-width="2" stroke-linecap="round"/>
+  <!-- Fillet arc (rounded corner) -->
+  <path d="M4 10 Q4 4 10 4 L20 4" stroke="#F59E0B" stroke-width="2.5" stroke-linecap="round"/>
+  <!-- Original corner dashed -->
+  <line x1="4" y1="10" x2="4" y2="4" stroke="#9CA3AF" stroke-width="1" stroke-dasharray="2,2"/>
+  <line x1="4" y1="4" x2="10" y2="4" stroke="#9CA3AF" stroke-width="1" stroke-dasharray="2,2"/>
+  <!-- R indicator -->
+  <text x="8" y="9" font-size="7" font-weight="bold" fill="#D97706" font-family="sans-serif">R</text>
+</svg>

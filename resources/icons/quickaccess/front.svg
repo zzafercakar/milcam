@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#93C5FD"/>
+      <stop offset="100%" stop-color="#3B82F6"/>
+    </linearGradient>
+  </defs>
+  <!-- Cube wireframe -->
+  <path d="M12 3L3 8v8l9 5 9-5V8z" fill="none" stroke="#2563EB" stroke-width="0.8" opacity="0.4"/>
+  <path d="M12 13L3 8" fill="none" stroke="#2563EB" stroke-width="0.8" opacity="0.4"/>
+  <path d="M12 13l9-5" fill="none" stroke="#2563EB" stroke-width="0.8" opacity="0.4"/>
+  <!-- Front face (highlighted) -->
+  <path d="M3 8v8l9 5v-8z" fill="url(#g)" stroke="#1E40AF" stroke-width="1"/>
+  <rect x="4" y="9" width="5" height="1" rx="0.5" fill="rgba(255,255,255,0.4)"/>
+</svg>

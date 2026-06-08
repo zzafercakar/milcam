@@ -1,0 +1,56 @@
+{
+  "version": 4,
+  "cmakeMinimumRequired": { "major": 3, "minor": 22, "patch": 0 },
+  "configurePresets": [
+    {
+      "name": "default",
+      "displayName": "MilCAM default (host build)",
+      "description": "Native build on the developer workstation",
+      "binaryDir": "${sourceDir}/build",
+      "generator": "Unix Makefiles",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "RelWithDebInfo",
+        "MILCAM_ENABLE_FREECAD": "ON",
+        "MILCAM_ENABLE_OPCUA": "OFF",
+        "MILCAM_BUILD_TESTS": "ON"
+      }
+    },
+    {
+      "name": "debug",
+      "inherits": "default",
+      "displayName": "MilCAM debug",
+      "binaryDir": "${sourceDir}/build-debug",
+      "cacheVariables": { "CMAKE_BUILD_TYPE": "Debug" }
+    },
+    {
+      "name": "asan",
+      "inherits": "debug",
+      "displayName": "MilCAM debug + ASan",
+      "binaryDir": "${sourceDir}/build-asan",
+      "cacheVariables": { "MILCAM_ENABLE_ASAN": "ON" }
+    },
+    {
+      "name": "panel-pc",
+      "displayName": "MilCAM for VEC-VE panel PC (aarch64)",
+      "description": "Cross-compile to ARM64 — see scripts/toolchain-aarch64.cmake",
+      "binaryDir": "${sourceDir}/build-aarch64",
+      "generator": "Ninja",
+      "toolchainFile": "${sourceDir}/scripts/toolchain-aarch64.cmake",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "MinSizeRel",
+        "MILCAM_ENABLE_FREECAD": "ON",
+        "MILCAM_ENABLE_OPCUA": "ON",
+        "MILCAM_BUILD_TESTS": "OFF"
+      }
+    }
+  ],
+  "buildPresets": [
+    { "name": "default", "configurePreset": "default", "jobs": 0 },
+    { "name": "debug",   "configurePreset": "debug",   "jobs": 0 },
+    { "name": "asan",    "configurePreset": "asan",    "jobs": 0 },
+    { "name": "panel-pc","configurePreset": "panel-pc","jobs": 0 }
+  ],
+  "testPresets": [
+    { "name": "default", "configurePreset": "default", "output": { "outputOnFailure": true } }
+  ]
+}

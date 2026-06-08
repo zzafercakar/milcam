@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">
+  <!-- Crosshair -->
+  <line x1="12" y1="4" x2="12" y2="20" stroke="#94A3B8" stroke-width="0.8"/>
+  <line x1="4" y1="12" x2="20" y2="12" stroke="#94A3B8" stroke-width="0.8"/>
+  <!-- Point -->
+  <circle cx="12" cy="12" r="3" fill="#2563EB" stroke="#1E40AF" stroke-width="0.8"/>
+  <circle cx="12" cy="12" r="1" fill="#FFFFFF"/>
+</svg>

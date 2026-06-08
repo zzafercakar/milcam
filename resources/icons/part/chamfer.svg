@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#FB923C"/>
+      <stop offset="100%" stop-color="#EA580C"/>
+    </linearGradient>
+  </defs>
+  <!-- L-shape with chamfered corner -->
+  <path d="M5 4v9l7 7h8" stroke="url(#g)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  <!-- Dashed original corner -->
+  <path d="M5 13V20h7" stroke="#9CA3AF" stroke-width="1" stroke-dasharray="2 2" fill="none"/>
+  <!-- Chamfer line highlight -->
+  <path d="M5 13l7 7" stroke="#FDE68A" stroke-width="1.2"/>
+</svg>

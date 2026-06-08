@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#FBBF24"/>
+      <stop offset="100%" stop-color="#D97706"/>
+    </linearGradient>
+  </defs>
+  <!-- Pen tip -->
+  <path d="M17 3l4 4-12 12H5v-4z" fill="url(#g)" stroke="#92400E" stroke-width="0.7"/>
+  <path d="M15 5l4 4" stroke="#FEF3C7" stroke-width="1"/>
+  <!-- Engraved line -->
+  <path d="M3 21l4-1" stroke="#92400E" stroke-width="1.5" stroke-linecap="round"/>
+</svg>

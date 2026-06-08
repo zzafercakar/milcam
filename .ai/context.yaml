@@ -1,0 +1,161 @@
+project:
+  name: MilCAM
+  description: Touch-first CAM application for CodeSys CNC panel PCs (VEC-VE class)
+  version: 0.1.0
+  language: C++20
+  license: Proprietary (adapter/app/ui/cam) + LGPL-2.1 (freecad/ subset)
+  origin: Carved out of CADNC on 2026-06-08 for field deployment on VEC-VE panel PCs
+  sibling_projects:
+    cadnc: /home/embed/Dev/CADNC/    # full CAD+CAM workstation
+    milcad: /home/embed/Dev/MilCAD/   # previous-gen CAD project
+
+scope:
+  in_scope:
+    - "Import: STEP, IGES, BREP, DXF, STL, OBJ (read-only)"
+    - "CAM operations: Profile, Pocket, Drill, Facing, Adaptive, Engrave, Helix, Slot"
+    - "Toolpath simulation (dexel stock model)"
+    - "G-code generation via CODESYS post-processor"
+    - "OPC UA client for CodeSys runtime status/control"
+    - "Drop folder + atomic rename for G-code handoff"
+    - "Touch-first UI with Qt Virtual Keyboard"
+    - "Side-by-side coexistence with CodeSys TargetVisu HMI"
+  out_of_scope:
+    - "Parametric CAD authoring (Sketcher, PartDesign)"
+    - "2D constraint solving"
+    - "Nesting (separate concern, can live in CADNC)"
+    - "Full mouse + keyboard workstation workflow"
+
+target_hardware:
+  reference_device: "VEC-VE 12 inch panel PC"
+  os: "Embedded Linux (aarch64) — confirmed via .docx evidence"
+  cpu: "Quad-core ~1.6 GHz Cortex-A class"
+  ram: "UNKNOWN — must be measured (Faz 0 of WORKPLAN)"
+  display: "12 inch 1024x768 TFT, 4-wire resistive touch"
+  touch_device: "/dev/input/event1 via tslib"
+  display_server: "X11 (DISPLAY=:0, QT_QPA_PLATFORM=xcb)"
+  codesys_runtime: "Control RTE for Linux ARM v3.5.15.10"
+  details: "See .ai/VEC_VE_TARGET.md"
+
+architecture:
+  pattern: "Layered: UI Shell -> Adapter -> FreeCAD slim subset -> OCCT"
+  layers:
+    - name: UI Shell
+      tech: "Qt6 QML + QuickControls2 + VirtualKeyboard"
+      dir: ui/
+      notes: "Touch-first; every interactive control >=48px (target 56px). No keyboard assumption."
+    - name: Adapter
+      tech: C++20
+      dir: adapter/
+      classes:
+        - CadDocument
+        - CamFacade
+        - PartFacade        # import-only usage in MilCAM
+        - ImportFacade       # STEP/IGES/DXF/STL wrapper (NEW)
+        - CodesysBridge      # OPC UA + drop folder (NEW)
+        - FacadeError
+        - ScopedTransaction
+      pruned_from_cadnc:
+        - SketchFacade       # to be deleted
+        - SketchDocument
+        - SketchEntity
+        - NestFacade
+        - SceneManager
+    - name: FreeCAD backend (slim)
+      tech: C++17 + Python3
+      dir: freecad/
+      modules: [Base, App, Mod/Material/App, Mod/Part/App]
+      omitted: [Mod/Sketcher, Mod/PartDesign, Gui, Tools, Build]
+    - name: OCCT kernel
+      tech: OpenCASCADE 7.6+
+      role: "Geometry import + viewport"
+  side_modules:
+    - name: CAM
+      dir: cam/
+      origin: "CADNC (originally MilCAD)"
+      operations: [Facing, Profile, Pocket, Drill, Adaptive, Engrave, Helix, Slot]
+      post_processors: [CodesysPostProcessor, GenericPostProcessor]
+      sync_rule: "Any CAM bugfix discovered here MUST be ported back to CADNC's cam/"
+
+tech_stack:
+  language: C++20
+  build: CMake 3.22+
+  ui_framework: Qt6 Quick + Virtual Keyboard
+  cad_backend: FreeCAD 1.2 (Base, App, Material, Part only)
+  geometry_kernel: OpenCASCADE 7.6+
+  python: Python 3.x (required by FreeCAD)
+  testing: ctest + lightweight smoke tests (no GTest dep yet)
+  opc_ua_client: open62541 (planned, gated by MILCAM_ENABLE_OPCUA)
+  cross_compile_target: aarch64-linux-gnu (panel-pc preset)
+
+build:
+  configure: cmake --preset default
+  build: cmake --build build -j$(nproc)
+  run: DISPLAY=:0 QT_QPA_PLATFORM=xcb ./build/milcam
+  test: ctest --test-dir build --output-on-failure
+  cross_compile: cmake --preset panel-pc
+
+dependencies:
+  system_packages:
+    - python3-dev
+    - libboost-all-dev
+    - libxerces-c-dev
+    - zlib1g-dev
+    - libicu-dev
+    - opencascade-dev
+    - qt6-declarative-dev
+    - qt6-declarative-dev-tools
+    - qt6-virtualkeyboard-plugin  # NEW vs CADNC
+    - libeigen3-dev
+    - libfreetype-dev
+    - libgl-dev
+    - libglx-dev
+    - qt6-svg-dev
+    - libqt6svg6
+    - libtbb-dev
+    - libfontconfig1-dev
+    - wmctrl                       # NEW — window raise for HMI <-> CAM switch
+    - libopen62541-dev             # NEW (optional, Faz 3)
+
+critical_rules:
+  - "UI code MUST NOT include any FreeCAD header — only via adapter/"
+  - "AIS_InteractiveContext operations only on the render thread"
+  - "Linux: GLX only, never EGL"
+  - "Sketcher / PartDesign / Nesting MUST NOT be re-introduced"
+  - "Every interactive control >=48px (target 56px) — touch-first non-negotiable"
+  - "No physical keyboard assumption — Qt VirtualKeyboard handles input"
+  - "freecad/ subtree: minimum modifications for upstream compatibility"
+  - "Real-time PLC must remain unaffected by CAD activity — see VEC_VE_TARGET.md jitter discipline"
+
+status:
+  phase: "Faz 0 — Iskelet"
+  done_today_2026-06-08:
+    - "Created /home/embed/Dev/MilCAM directory tree"
+    - "Copied cam/, util/, viewport/, resources/, adapter/ from CADNC"
+    - "Copied freecad/{Base, App, Mod/Material, Mod/Part, 3rdParty, cmake, ...} from CADNC"
+    - "Removed Sketcher/PartDesign from freecad/CMakeLists.txt"
+    - "Wrote new top-level CMakeLists.txt (no Sketcher/PartDesign/Nesting in adapter glob)"
+    - "Wrote CMakePresets.json with default + debug + asan + panel-pc presets"
+    - "Wrote app/main.cpp with VirtualKeyboard + single-instance lock"
+    - "Wrote ui/qml/Main.qml touch-first shell"
+    - "Wrote ImportFacade and CodesysBridge headers + stub impls"
+    - "Wrote tests/test_codesys_bridge.cpp smoke test"
+    - "Wrote CLAUDE.md, README.md, LICENSE, .gitignore"
+    - "Wrote full .ai/ documentation set"
+    - "Wrote .vscode/ workspace + launch + tasks"
+  next_action: "Faz 0.5: hardware reality check on VEC-VE via SSH (see WORKPLAN)"
+
+reference_projects:
+  cadnc:
+    path: /home/embed/Dev/CADNC/
+    usage: "Authoritative upstream for cam/, viewport/, util/, resources/"
+  milcad:
+    path: /home/embed/Dev/MilCAD/
+    usage: "Legacy reference; do not copy code blindly"
+  freecad:
+    path: /home/embed/Downloads/FreeCAD-main-1-1-git/
+    usage: "LGPL upstream — for module updates only"
+
+communication:
+  code_and_comments: English
+  user_communication: Turkish
+  ai_docs_language: "Mixed (Turkish prose, English technical terms)"

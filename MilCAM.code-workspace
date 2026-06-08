@@ -1,0 +1,132 @@
+{
+  "folders": [
+    { "name": "MilCAM",  "path": "." },
+    { "name": "CADNC (sibling — CAM upstream)", "path": "../CADNC" }
+  ],
+  "settings": {
+    "cmake.sourceDirectory": "${workspaceFolder:MilCAM}",
+    "cmake.buildDirectory":  "${workspaceFolder:MilCAM}/build",
+    "cmake.configureOnOpen": false,
+    "cmake.configureSettings": {
+      "MILCAM_ENABLE_FREECAD": "ON",
+      "MILCAM_ENABLE_OPCUA":    "OFF",
+      "MILCAM_BUILD_TESTS":     "ON"
+    },
+    "files.associations": {
+      "*.qml": "qml",
+      "*.qmldir": "qmldir",
+      "*.h.in":   "cpp"
+    },
+    "files.exclude": {
+      "build":             true,
+      "build-*":           true,
+      "freecad/3rdParty/PyCXX/CXX": true
+    },
+    "search.exclude": {
+      "build":  true,
+      "build-*": true,
+      "freecad/3rdParty": true,
+      "freecad/Base/Tools": true
+    },
+    "C_Cpp.default.cppStandard": "c++20",
+    "C_Cpp.default.includePath": [
+      "${workspaceFolder:MilCAM}/adapter/inc",
+      "${workspaceFolder:MilCAM}/cam/inc",
+      "${workspaceFolder:MilCAM}/util/inc",
+      "${workspaceFolder:MilCAM}/viewport/inc",
+      "${workspaceFolder:MilCAM}/freecad",
+      "${workspaceFolder:MilCAM}/build/generated",
+      "/usr/include/opencascade",
+      "/usr/include/qt6",
+      "/usr/include/eigen3"
+    ],
+    "C_Cpp.default.defines": [ "QT_NO_KEYWORDS" ],
+    "editor.formatOnSave": false,
+    "editor.tabSize": 4,
+    "editor.insertSpaces": true,
+    "files.trimTrailingWhitespace": true
+  },
+  "extensions": {
+    "recommendations": [
+      "ms-vscode.cpptools",
+      "ms-vscode.cmake-tools",
+      "twxs.cmake",
+      "theqtcompany.qt-qml",
+      "redhat.vscode-yaml",
+      "yzhang.markdown-all-in-one"
+    ]
+  },
+  "launch": {
+    "version": "0.2.0",
+    "configurations": [
+      {
+        "name": "(Linux) Launch MilCAM",
+        "type": "cppdbg",
+        "request": "launch",
+        "program": "${workspaceFolder:MilCAM}/build/milcam",
+        "args": [],
+        "stopAtEntry": false,
+        "cwd": "${workspaceFolder:MilCAM}",
+        "environment": [
+          { "name": "DISPLAY",          "value": ":0" },
+          { "name": "QT_QPA_PLATFORM",  "value": "xcb" },
+          { "name": "QT_IM_MODULE",     "value": "qtvirtualkeyboard" }
+        ],
+        "externalConsole": false,
+        "MIMode": "gdb",
+        "setupCommands": [
+          { "description": "Pretty-print", "text": "-enable-pretty-printing" }
+        ],
+        "preLaunchTask": "MilCAM build"
+      },
+      {
+        "name": "(Linux) Run smoke test_codesys_bridge",
+        "type": "cppdbg",
+        "request": "launch",
+        "program": "${workspaceFolder:MilCAM}/build/bin/test_codesys_bridge",
+        "cwd": "${workspaceFolder:MilCAM}",
+        "MIMode": "gdb"
+      }
+    ]
+  },
+  "tasks": {
+    "version": "2.0.0",
+    "tasks": [
+      {
+        "label": "MilCAM configure",
+        "type": "shell",
+        "command": "cmake --preset default",
+        "options": { "cwd": "${workspaceFolder:MilCAM}" },
+        "problemMatcher": []
+      },
+      {
+        "label": "MilCAM build",
+        "type": "shell",
+        "command": "cmake --build build -j$(nproc)",
+        "options": { "cwd": "${workspaceFolder:MilCAM}" },
+        "group": { "kind": "build", "isDefault": true },
+        "problemMatcher": [ "$gcc" ]
+      },
+      {
+        "label": "MilCAM tests",
+        "type": "shell",
+        "command": "ctest --test-dir build --output-on-failure",
+        "options": { "cwd": "${workspaceFolder:MilCAM}" },
+        "group": { "kind": "test", "isDefault": true }
+      },
+      {
+        "label": "MilCAM run",
+        "type": "shell",
+        "command": "DISPLAY=:0 QT_QPA_PLATFORM=xcb ./build/milcam",
+        "options": { "cwd": "${workspaceFolder:MilCAM}" },
+        "dependsOn": "MilCAM build"
+      },
+      {
+        "label": "MilCAM cross-build (panel-pc)",
+        "type": "shell",
+        "command": "cmake --preset panel-pc && cmake --build build-aarch64 -j$(nproc)",
+        "options": { "cwd": "${workspaceFolder:MilCAM}" }
+      }
+    ]
+  }
+}

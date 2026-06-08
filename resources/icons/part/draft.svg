@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#60A5FA"/>
+      <stop offset="100%" stop-color="#2563EB"/>
+    </linearGradient>
+  </defs>
+  <!-- Tapered shape -->
+  <path d="M5 20L8 4h8l3 16z" fill="url(#g)" stroke="#1E40AF" stroke-width="0.7"/>
+  <path d="M8 4h8" stroke="#F59E0B" stroke-width="1.5"/>
+  <!-- Angle indicator -->
+  <path d="M18 20L16 10" stroke="#F59E0B" stroke-width="1.5" stroke-dasharray="2 1"/>
+  <text x="19" y="14" font-size="6" fill="#F59E0B" font-weight="bold">α</text>
+</svg>
