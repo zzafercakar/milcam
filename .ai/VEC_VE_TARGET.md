@@ -3,6 +3,24 @@
 MilCAM'in deployment hedefi. Bu dosyayi oku — saha cihazinin gerçekleri
 mimari kararlarin kokunde.
 
+> **2026-06-09 update:** Cihaza ilk fiziksel erisim saglandi (RS232 serial
+> console). Detayli erisim rehberi: [SERIAL_CONSOLE_ACCESS.md](SERIAL_CONSOLE_ACCESS.md).
+> Cihazdan canli alinan veriler: [DEVICE_PROFILE.md](DEVICE_PROFILE.md).
+> Network probe: [NETWORK_PROBE_2026-06-09.md](NETWORK_PROBE_2026-06-09.md).
+
+## Erisim Yollari (2026-06-09 itibariyle)
+
+| Yontem            | Durum          | Detay                                       |
+|-------------------|----------------|---------------------------------------------|
+| RS232 serial console | ✅ CALISIYOR | 115200 8N1 no flow control; pin 4=RX, 8=TX, 6=GND |
+| Network ping       | ✅ 3 ms RTT   | 192.168.1.123 (default vendor IP)            |
+| SSH (port 22)      | ❌ kapali     | dropbear yuklu mu? — Faz 0.7'de kontrol      |
+| Telnet (port 23)   | ❌ kapali     | telnetd yok                                  |
+| CodeSys gateway (11740) | ✅ acik   | CODESYS Online uzerinden runtime erisim       |
+| WebVisu (8080)     | ❌ kapali     | uygulamada Visualization eklenmemis           |
+| OPC UA (4840)      | ❌ kapali     | MilCAM Faz 3'te acilacak                     |
+| FreeCAD AppImage   | ✅ kanitli   | 1.0.2 aarch64 daha once calistirilmis (.docx) |
+
 ## Donanim Profili (Belgelenen)
 
 Kaynak: `doc/VEC-VE-MU-AH 12 inch.pdf` + `doc/How to Run FreeCAD(2).docx`.
@@ -11,14 +29,15 @@ Kaynak: `doc/VEC-VE-MU-AH 12 inch.pdf` + `doc/How to Run FreeCAD(2).docx`.
 | ------------- | ------------------------------------------ |
 | Model         | VEC-VE-MU-AH 12 inch                       |
 | CPU           | Quad-core ~1.6 GHz Cortex-A sınıfı (ARM)   |
-| RAM           | **DATASHEET'TE BELIRTILMEMIS** — Faz 5'te ölçülecek |
+| **Arch**      | **aarch64 (ARM 64-bit)** — DOGRULANDI 2026-06-09 (FreeCAD AppImage adi `...aarch64...`) |
+| RAM           | **DATASHEET'TE BELIRTILMEMIS** — Faz 0.7'de ölçülecek (cihazda `free -h`) |
 | Disk          | microSD (TICard) + dahili flash            |
 | Ekran         | 12" 1024×768 TFT, PLED backlight 50K saat  |
 | Touch         | 4-tel dirençli, ±%2 doğruluk               |
 | OS            | Embedded Linux (busybox userland)          |
 | Display srv   | X11, `DISPLAY=:0`, `QT_QPA_PLATFORM=xcb`   |
 | Touch device  | `/dev/input/event1` (tslib)                |
-| CodeSys       | 3.5.15.10, Control RTE for Linux ARM       |
+| CodeSys       | **3.15.20** Control RTE for Linux ARM (DOGRULANDI 2026-06-09: `/root/codesyscontrol_3.15.20_exit`) |
 | EtherCAT      | Master, CoE, CiA402                        |
 | Modbus        | RTU (RS485) + TCP (port 502/503)           |
 | Ethernet      | 192.168.1.123 (default)                    |

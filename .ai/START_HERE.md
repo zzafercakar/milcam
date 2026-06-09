@@ -1,7 +1,15 @@
 # MilCAM — Start Here
 
-> Bu dosyayi HER oturum basinda oku. Sonra `context.yaml`, `WORKPLAN.md`,
-> `ARCHITECTURE.md`, `VEC_VE_TARGET.md` dosyalarini oku.
+> Bu dosyayi HER oturum basinda oku. Sonra sirayla: `context.yaml`,
+> `DEVICE_PROFILE.md`, `SERIAL_CONSOLE_ACCESS.md`, `WORKPLAN.md`,
+> `ARCHITECTURE.md`, `VEC_VE_TARGET.md`, `ENGINEERING_LOG.md`.
+
+> **2026-06-09 — Cihaz erisimi acildi.** RS232 serial console uzerinden
+> VEC-VE'ye baglandik, `/root/` icerigini gorduk, network probe yapildi.
+> Detaylar: [DEVICE_PROFILE.md](DEVICE_PROFILE.md),
+> [SERIAL_CONSOLE_ACCESS.md](SERIAL_CONSOLE_ACCESS.md),
+> [NETWORK_PROBE_2026-06-09.md](NETWORK_PROBE_2026-06-09.md). Bir sonraki
+> adim WORKPLAN.md "Faz 0.7 — Donanim Envanteri".
 
 ## Bir Cumlede Proje
 

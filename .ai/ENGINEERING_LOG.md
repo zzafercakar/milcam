@@ -4,6 +4,51 @@ Karsilasilan teknik sorunlar, root cause, cozumler. Yeni en uste.
 
 ---
 
+## 2026-06-09 — Serial console baglantisi (3 girisim, basarili)
+
+**Olay:** VEC-VE'ye RS232 uzerinden Linux shell erisimi gerekti. Uc adimda
+basarildi.
+
+**Adim 1 (basarisiz):** Eski USB-RS232 donusturucu + standart DB9 kablo.
+`sudo screen /dev/ttyS0 115200,cs8,-ixon,-ixoff,-crtscts` ile baglanildi
+ama **surekli garbage karakter** akti (`|••÷` gibi yuksek-bit semboller
+tekrarli). Olas neden: donusturucu kalitesi veya pinout uyumsuzlugu.
+
+**Adim 2 (basarisiz):** Yeni MOXA UPort donusturucu + ayni standart kablo
+takildi. Bu sefer **bos ekran**. Cihaz Windows tarafindan COM1'e atandi
+(Device Manager dogruladi). VMware'in fiziksel seri portu /dev/ttyS0'a
+geciriyor — host'ta uartclk=1843200 type=16550A.
+
+**Network probe** yapildi paralelde: cihaza ping 3 ms RTT,
+**port 11740 (CodeSys gateway) acik**, SSH/Telnet/HTTP/WebVisu/OPC UA
+kapali. Yani serial console **tek interaktif yol**.
+
+**Root cause analizi:** VEC-VE'nin DB9 pinout'u **standart degil**
+(.docx Pin 4=RX, 8=TX, 6=GND vs standart 2=RX, 3=TX, 5=GND). Standart
+kablo ile MOXA TX'i cihazin yanlis pinine, MOXA RX'i bos hatta dusuyor.
+
+**Adim 3 (basarili):** Kullanici dogru kabloyu bagladi (muhtemelen vendor
+ozel kablosu veya elle crossover yapti). Hem Windows SecureCRT hem Ubuntu
+VM screen ile root@/root/ prompt'una erisim saglandi. `ls -l /root` cikti:
+CodeSys runtime 3.15.20, Modbus param dosyalari, GPIO/touch/SPI test
+binary'leri gorulebildi.
+
+**Cozum (gelecek icin):**
+
+- [SERIAL_CONSOLE_ACCESS.md](SERIAL_CONSOLE_ACCESS.md) — adim adim
+  baglanti rehberi + pinout uyari + karar agaci.
+- [DEVICE_PROFILE.md](DEVICE_PROFILE.md) — cihazdan alinan bilgiler +
+  henuz alinmayan envanter komutu (kullanici bunu calistirip cevap
+  doldurulacak).
+- [NETWORK_PROBE_2026-06-09.md](NETWORK_PROBE_2026-06-09.md) — port
+  taramasi sonuclari + servis baslatma onerileri.
+
+**Acik konu:** Tam donanim envanteri (RAM, CPU model, kernel version,
+disk, OpenGL/DRM) henuz alinmadi. Komut blogu DEVICE_PROFILE.md'de hazir,
+bir sonraki oturumda ilk is olarak calistirilacak.
+
+---
+
 ## 2026-06-08 — Pivot: kendi UI'yi sil, FreeCAD'i kullan
 
 **Olay:** Ilk MilCAM scaffold'unda yanlislikla CADNC'nin mimarisini taklit

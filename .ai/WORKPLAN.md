@@ -1,4 +1,43 @@
-# MilCAM Workplan (revised 2026-06-08)
+# MilCAM Workplan (revised 2026-06-09)
+
+## Faz 0.6 — Cihaz Erisimi  ✅  (2026-06-09)
+
+**Tamamlanan:**
+
+- RS232 serial console basariyla kuruldu (115200 8N1, no flow control)
+- VEC-VE pinout uyari belgelendi (Pin 4=RX, 8=TX, 6=GND — standart degil)
+- Network probe: cihaz ping 3ms RTT, **port 11740 acik**, SSH/Telnet kapali
+- `/root/` icerigi alindi: CodeSys 3.15.20 runtime, Modbus param dosyalari
+- Cihaz mimarisi DOGRULANDI: **aarch64** (FreeCAD AppImage adi: `...-aarch64-py311.AppImage`)
+- Belgeler: [DEVICE_PROFILE.md](DEVICE_PROFILE.md), [SERIAL_CONSOLE_ACCESS.md](SERIAL_CONSOLE_ACCESS.md), [NETWORK_PROBE_2026-06-09.md](NETWORK_PROBE_2026-06-09.md)
+
+**Henuz alinmadi (Faz 0.7'de ilk is):** RAM, CPU model, kernel version,
+disk, OpenGL/DRM, dropbear var mi, CODESYSControl.cfg icerigi.
+Hazir komut blogu DEVICE_PROFILE.md'nin sonunda.
+
+---
+
+## Faz 0.7 — Donanim Envanteri  🔜 (siradaki ILK is)
+
+**Amac:** Cihazin RAM/CPU/disk/GPU profilini ogrenmek. MilCAM mimari plan
+A/B/C secimini bu belirleyecek.
+
+**Adim:** [DEVICE_PROFILE.md](DEVICE_PROFILE.md) sonundaki tek-blok komutu
+serial console'a yapistir, ciktiyi "GERCEK CIKTI" bolumune yapistir.
+
+**Karar agaci:**
+
+- RAM >= 2 GB  → **Plan A**: slim FreeCAD cihazda calisir, MilCAM'i cihaza deploy et.
+- RAM 1-2 GB → **Plan B agresif**: FreeCAD modullerinden daha fazlasini disable et,
+  sadece CAM essential + minimum Gui. Hatta `BUILD_GUI=OFF` denenebilir
+  (FreeCAD'i headless calistirip CAM komutlarini scriptle ver, sonuc dosyaya).
+- RAM < 1 GB → **Plan C**: MilCAM ayri workstation'da, cihaz sadece G-code
+  receiver (drop folder watcher + OPC UA).
+
+**Kabul kriteri:** Donanim envanteri DEVICE_PROFILE.md'de tamamen dolduruldu.
+Plan A/B/C secimi belirlendi.
+
+---
 
 ## Faz 0 — Yanlis Iskelet (IPTAL, silindi)
 

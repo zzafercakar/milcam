@@ -1,18 +1,39 @@
 # Gelecek Oturum Icin Ilk Mesaj
 
-## Onerilen Ilk Okumalar
+## Onerilen Ilk Okumalar (sirayla)
 
 ```
 Read .ai/START_HERE.md
 Read .ai/context.yaml
-Read .ai/WORKPLAN.md
+Read .ai/DEVICE_PROFILE.md          ← yeni, cihaz envanteri
+Read .ai/SERIAL_CONSOLE_ACCESS.md   ← yeni, baglanti rehberi
+Read .ai/WORKPLAN.md                ← Faz 0.7 yeni eklendi
 Read .ai/ARCHITECTURE.md
-Read .ai/ENGINEERING_LOG.md
+Read .ai/ENGINEERING_LOG.md         ← 2026-06-09 girisi
 ```
 
-## Sonraki Beklenen Adim (2026-06-08 itibariyle)
+## Sonraki Beklenen Adim (2026-06-09 itibariyle)
 
-**Faz 1 — Ilk End-to-End Build Denemesi.**
+**Faz 0.7 — VEC-VE'den TAM donanim envanteri al.**
+
+Onceki oturumda VEC-VE'ye serial console baglantisi kuruldu
+(115200 8N1 no flow control, `/dev/ttyS0`). `ls -l /root` cikti, network
+probe yapildi (port 11740 acik, SSH kapali). Ama RAM/CPU/disk/GPU
+bilgileri henuz alinmadi.
+
+**Adim:**
+
+1. Cihaza serial console ile bagla:
+   ```bash
+   sudo screen /dev/ttyS0 115200,cs8,-ixon,-ixoff,-crtscts
+   ```
+2. ENTER bas, `#` prompt'una gelmeli.
+3. [.ai/DEVICE_PROFILE.md](.ai/DEVICE_PROFILE.md)'nin sonundaki "tek-blok
+   komut"u kopyala, terminale yapistir.
+4. Cikan ciktiyi DEVICE_PROFILE.md'nin "GERCEK CIKTI" bolumune yapistir.
+5. WORKPLAN.md Faz 0.7 karar agacina gore Plan A/B/C sec.
+
+**Ondan sonra Faz 1 — Ilk End-to-End Build Denemesi.**
 
 ```bash
 cd /home/embed/Dev/MilCAM
