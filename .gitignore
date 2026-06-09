@@ -25,3 +25,8 @@ __pycache__/
 # AI scratch
 .remember/
 .codex/
+
+# Vendor FreeCAD-on-device test bundle — 834 MB of binaries, local-only.
+# The procedure (replace.sh, S40xorg) + findings are captured in
+# .ai/DISPLAY_ARCHITECTURE_2026-06-09.md instead.
+doc/test_FreeCAD/

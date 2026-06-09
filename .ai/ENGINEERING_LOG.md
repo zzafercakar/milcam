@@ -4,6 +4,42 @@ Karsilasilan teknik sorunlar, root cause, cozumler. Yeni en uste.
 
 ---
 
+## 2026-06-09 (gece+) — Görüntü mimarisi keşfi + FreeCAD/X canlı testi
+
+**Olay:** Cihazda "basit arayüz testi" istendi. Dropbear SSH üzerinden
+read-only probe yapıldı; sonra vendor X stack kurulup FreeCAD denendi.
+
+**Keşif (dokümante varsayımları çürüttü):** Cihaz stok hâlde **X11
+kullanmıyor** — CodeSYS doğrudan `/dev/fb0`'a çiziyor (Qt `linuxfb`).
+X server / xcb / OpenGL **yok**. Sistem Qt 5.12.4 platformları:
+linuxfb/directfb/vnc/minimal/offscreen. Ekran fotoğrafı: sadece kernel
+boot penguenleri (CodeSYS uygulamasında visualization yok). Detay:
+[DISPLAY_ARCHITECTURE_2026-06-09.md](DISPLAY_ARCHITECTURE_2026-06-09.md).
+
+**Vendor X enabler:** `doc/.../temp_lib/replace.sh` → `/usr`'ı tümüyle
+değiştirip (Xorg + xcb + Qt) reboot ediyor. **TUZAK:** `rm -rf /usr` bizim
+`/usr/sbin/dropbear`'ımızı silerdi (SSH kaybı). Çözüm: **merge** (tar-pipe
+ile üzerine yaz, rm yok). dropbear statik olduğu için /usr swap'tan
+etkilenmez; vendor /usr superset olduğu için CodeSYS de korundu.
+
+**Sonuçlar:**
+- ✅ **X11 arayüz testi GEÇTİ** — Xorg DSI panelini 1024×768 sürdü
+  (modesetting/DRM), xterm fiziksel panelde göründü (kullanıcı fotoğrafı).
+- ❌ **FreeCAD 3B ÇALIŞMAZ** — `QXcbIntegration: Cannot create platform
+  OpenGL context, neither GLX nor EGL`. Xorg'da `libglx.so` yok, sistemde
+  libGL/swrast yok. FreeCAD açılıyor (~287MB RSS, ~30s) ama 3B viewport
+  render edilemiyor → CAM için kullanılamaz.
+
+**Çıkarım:** QtWidgets 2.5B CAM (raster, GL'siz) bu donanımda çalışır;
+FreeCAD'in GL bağımlı 3B'si çalışmaz. Standalone yaklaşım lehine güçlü
+kanıt. Mimari karar kullanıcıya bırakıldı ("sonra devam edeceğiz").
+
+**fb0 yakalama tuzağı:** modesetting DRM/KMS legacy fbdev'i baypas eder;
+`/dev/fb0` okuması X çıktısını göstermez (stale penguen). Görsel doğrulama
+yalnız panel fotoğrafı ile yapıldı.
+
+---
+
 ## 2026-06-09 (gece) — Dropbear SSH cross-build, transfer ve install
 
 **Olay:** Cihaza network uzerinden SSH erisimi icin dropbear cross-build
