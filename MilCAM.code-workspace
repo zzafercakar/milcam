@@ -3,6 +3,12 @@
     {
       "name": "CADNC (sibling, different architecture)",
       "path": "../CADNC"
+    },
+    {
+      "path": "."
+    },
+    {
+      "path": "../../Downloads/FreeCAD-main-1-1"
     }
   ],
   "settings": {

@@ -48,7 +48,7 @@ Belgenin altında "DURUM" tablosu var — hangi bilgi alındı, hangisi bekliyor
 | **Kernel**                     | Linux **4.14.98-rt53** PREEMPT-RT                         | live `uname -a`                     |
 | **OS**                         | **Buildroot 2019.08**                                     | /etc/os-release                     |
 | **eth0 / eth1**                | 192.168.2.123 (down) / **192.168.1.123 (active)**         | live `ip addr`                      |
-| **SSH daemon**                 | **YOK** (dropbear/sshd yüklü değil)                       | `which dropbear sshd`               |
+| **SSH daemon**                 | ✅ **dropbear 2024.86** (kuruldu 2026-06-09)              | `/usr/sbin/dropbear`, key-only auth |
 | **FTP daemon**                 | **vsftpd VAR** (init.d S70vsftpd)                         | `ls /etc/init.d`                    |
 | **DBus**                       | VAR                                                       | init.d S30dbus                      |
 
@@ -178,16 +178,22 @@ console=ttymxc1,115200 earlycon=ec_imx6q,0x30890000,115200 root=/dev/mmcblk2p2 r
   string olabilir, gerçek SoC i.MX 8M)
 - `root=/dev/mmcblk2p2` → eMMC kart partition 2'de root FS
 
-### SSH durumu — **YOK**
+### SSH durumu — **DROPBEAR 2024.86 KURULDU** (2026-06-09 17:18)
 
-```
-which dropbear sshd telnetd  → ciktisiz
-ls /usr/sbin/dropbear        → yok
-ls /usr/sbin/sshd            → yok
+- Cross-build aarch64 statik (host glibc mismatch icin static zorunlu)
+- Key-only auth (parola disabled — host glibc'de crypt() yoktu)
+- Host keys: RSA 2048 + ED25519
+- Daemon: `/usr/sbin/dropbear -p 22 -E`, port 22 LISTEN
+- Init: `/etc/init.d/S60dropbear` boot'ta otomatik baslar + host key bootstrap
+- Reçete: [DROPBEAR_INSTALL_2026-06-09.md](DROPBEAR_INSTALL_2026-06-09.md)
+
+```bash
+# Host'tan erisim:
+ssh -i ~/.ssh/milcam_id root@192.168.1.123
 ```
 
-- Hiçbir SSH/Telnet daemon yüklü değil
-- Dosya transferi için **vsftpd** var (init.d S70vsftpd)
+- Eski durum: hicbir SSH binary yoktu, transfer icin **vsftpd**
+  (init.d S70vsftpd) anonymous read OK, anonymous write REDDEDILDI
 
 ### init.d (boot scripts)
 

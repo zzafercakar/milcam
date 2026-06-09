@@ -32,17 +32,59 @@ Ham log: [DEVICE_INVENTORY_2026-06-09.log](DEVICE_INVENTORY_2026-06-09.log).
 
 ---
 
-## Faz 0.8 — Cihazi MilCAM icin Hazirla  🔜 (siradaki)
+## Faz 0.8 — Cihazi MilCAM icin Hazirla  🚧 (KISMEN tamamlandi)
 
-**Amac:** Cihazin RAM/CPU/disk/GPU profilini ogrenmek. MilCAM mimari plan
-A/B/C secimini bu belirleyecek.
+### 0.8.1 — Dropbear SSH  ✅ 2026-06-09 17:18
 
-**Adim:** [DEVICE_PROFILE.md](DEVICE_PROFILE.md) sonundaki tek-blok komutu
-serial console'a yapistir, ciktiyi "GERCEK CIKTI" bolumune yapistir.
+Yapilan:
+- aarch64 statik dropbear 2024.86 cross-build (host glibc 2.39 → cihaz
+  glibc 2.29 mismatch icin statik zorunlu)
+- Serial uzerinden base64 transfer (~2 dakika)
+- /usr/sbin/dropbear + /usr/sbin/dropbearkey install
+- /etc/init.d/S60dropbear (boot'ta auto-start + host key bootstrap)
+- RSA + ED25519 host keys generate
+- Host ed25519 key + /root/.ssh/authorized_keys
+- TEST BASARILI: `ssh -i ~/.ssh/milcam_id root@192.168.1.123` calisiyor
 
-**Karar agaci:**
+Detay: [DROPBEAR_INSTALL_2026-06-09.md](DROPBEAR_INSTALL_2026-06-09.md)
 
-- RAM >= 2 GB  → **Plan A**: slim FreeCAD cihazda calisir, MilCAM'i cihaza deploy et.
+### 0.8.2 — Diger hazirliklar  🔜 (siradaki)
+
+1. **CODESYSControl.cfg'ye `[SysProcess]` ekle** — MilCAM SendToCodesys
+   komutunun harici komut calistirabilmesi icin:
+   ```sh
+   ssh root@192.168.1.123  # artik buradan rahat baglaniyoruz
+   cat >> /root/CODESYSControl.cfg <<'EOF'
+
+   [SysProcess]
+   Command=AllowAll
+   EOF
+   # CodeSys runtime restart gerek
+   ```
+
+2. **`wmctrl` cross-build + transfer** — MilCAM SwitchToHmi komutu
+   gerektiriyor. ~50 KB binary, dropbear ile ayni cross-build patterni
+   (statik link).
+
+3. **TargetVisu pencereli mod** — CODESYSControl.cfg `[CmpTargetVisu]`
+   bloguna:
+   ```ini
+   WindowPositionX=0
+   WindowPositionY=48
+   WindowSizeWidth=1024
+   WindowSizeHeight=720
+   ```
+
+4. **Realtek USB Ethernet rotasi degerlendir** — cihaz r8152 dongle
+   takmis, bu kanaldan host'la geri-route mumkun mu test et. Eger
+   evetse scp ile mega-hizli deploy yolu acilir.
+
+**Amac:** Cihazi MilCAM deploy'una hazirla.
+
+**Karar agaci eski (Faz 0.7'den):**
+
+Faz 0.7'de plan kararlari verildi:
+- RAM 2 GB ✓ → **Plan A onaylandi**: slim FreeCAD cihazda calisacak.
 - RAM 1-2 GB → **Plan B agresif**: FreeCAD modullerinden daha fazlasini disable et,
   sadece CAM essential + minimum Gui. Hatta `BUILD_GUI=OFF` denenebilir
   (FreeCAD'i headless calistirip CAM komutlarini scriptle ver, sonuc dosyaya).

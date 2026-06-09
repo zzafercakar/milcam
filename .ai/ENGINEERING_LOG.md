@@ -4,6 +4,62 @@ Karsilasilan teknik sorunlar, root cause, cozumler. Yeni en uste.
 
 ---
 
+## 2026-06-09 (gece) — Dropbear SSH cross-build, transfer ve install
+
+**Olay:** Cihaza network uzerinden SSH erisimi icin dropbear cross-build
+ve deploy gerekti. Faz 0.8'in birinci alt-adimi.
+
+**Asamalari ve cozulen sorunlari:**
+
+1. **Cross-compile toolchain:** Ubuntu 24.04 host'ta
+   `aarch64-linux-gnu-gcc 13.3.0` zaten yuklu. Configure + make ile
+   ilk build "dynamically linked" cikardi (CFLAGS=-static yetmedi).
+
+2. **vsftpd anonymous upload reddedildi** → transfer yolu icin
+   alternatif gerek. **Cihaz host'a route bulamadi** (`No route to
+   host` — VMware NAT tek yonlu): host'tan cihaza ulasim var, tersi
+   yok. wget/HTTP server denemesi yapildi ama cihaz host IP'sini
+   bulamadigi icin reddedildi.
+
+3. **Karar: serial console uzerinden base64 transfer.** ~1 MB tar.gz →
+   ~1.3 MB base64 → ~2 dakika @ 115200 baud. Method:
+   - Cihazda alici: `head -c <SIZE> > /tmp/bundle.b64`
+   - Host'tan stream: `cat bundle.b64 > /dev/ttyS0`
+   - MD5 ile dogrulama: tam eşleşme, transfer guvenli.
+
+4. **Ilk install: SEGFAULT** — dropbear -h, dropbearkey, daemon hepsi
+   crashed. Sebep: host glibc 2.39 ↔ cihaz glibc 2.29 ABI mismatch,
+   dinamik link cihazda gerekli sembolleri bulamadi.
+
+5. **Cozum: statik build zorunlu.**
+   ```
+   CFLAGS="-Os -no-pie -fno-pie -static"
+   LDFLAGS="-static -no-pie -static-libgcc"
+   ```
+   `-no-pie` kritik — Ubuntu 24.04 default'ta PIE uretir, statik
+   linkleme ile catisma cikartiyor.
+
+6. **busybox tar gzip flag desteklemiyor** — `tar xzf` failed. Cozum:
+   `gunzip -c file.tar.gz | tar x` (busybox tar STDIN'den okuyabiliyor).
+
+7. **localoptions.h gerekli** — configure crypt() yokluğunu aciklamasi
+   sadece WARNING, build hala DROPBEAR_SVR_PASSWORD_AUTH'i ON birakir,
+   crypt.h include hata verir. `localoptions.h`'ye
+   `#define DROPBEAR_SVR_PASSWORD_AUTH 0` ile zorla kapatildi.
+
+8. **Sonuc:** Dropbear 2024.86 + 2x host key + init.d script + ed25519
+   pubkey auth. `ssh -i ~/.ssh/milcam_id root@192.168.1.123` → tam
+   shell. Test: `uname -a`, `ls /root` hepsi calisiyor.
+
+**Detayli recete:** [DROPBEAR_INSTALL_2026-06-09.md](DROPBEAR_INSTALL_2026-06-09.md)
+
+**Aciklik:** Kullanici cihaza Realtek USB Ethernet (r8152 driver)
+takti — bu cihazi host network'une (192.168.181.0/24) yakinlastirabilir,
+geri-route ozeligi kazandirabilir. Faz 0.8'in ikinci asamasinda
+test edilecek.
+
+---
+
 ## 2026-06-09 (aksam) — Full envanter cekildi, Plan A onaylandi
 
 **Olay:** Serial console acildiktan sonra, cihaza host'tan otomasyonlu komut

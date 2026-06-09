@@ -91,7 +91,33 @@ Otomatik script ile cihazdan envanter cekildi (stty + arka plan cat reader +
 
 Ham log: [DEVICE_INVENTORY_2026-06-09.log](DEVICE_INVENTORY_2026-06-09.log).
 
-### 6. Tum bulgular MilCAM belleğine aktarildi
+### 6. Dropbear SSH cross-build + deploy
+
+Cross-build dropbear 2024.86 (Ubuntu 24.04 host, gcc 13.3 aarch64):
+- Birinci deneme dinamik link → cihazda SEGFAULT (glibc 2.39 vs 2.29)
+- `-static -no-pie` ile ikinci deneme: statik ELF, calisti
+- Configure `crypt()` yokluğunu warning olarak verdi ama
+  DROPBEAR_SVR_PASSWORD_AUTH'i kapatmadi → `localoptions.h` zorunlu
+- busybox tar `-z` desteklemez → `gunzip -c | tar x` zorunlu
+- VMware NAT yuzunden cihaz host'a route bulamadi → vsftpd anon-write
+  yasak → transfer **serial uzerinden base64** (2 dk, MD5 dogrulamali)
+
+Cihazda:
+- `/usr/sbin/dropbear` + `/usr/sbin/dropbearkey` (statik aarch64)
+- `/etc/dropbear/` RSA + ED25519 host keys
+- `/etc/init.d/S60dropbear` boot start + host key bootstrap
+- `/root/.ssh/authorized_keys` host ed25519 pubkey
+- daemon LISTEN 0.0.0.0:22
+
+Host'tan test:
+```bash
+ssh -i ~/.ssh/milcam_id root@192.168.1.123
+# → Linux buildroot 4.14.98-rt53 #86 SMP PREEMPT ... aarch64 GNU/Linux
+```
+
+Detay: [DROPBEAR_INSTALL_2026-06-09.md](DROPBEAR_INSTALL_2026-06-09.md).
+
+### 7. Tum bulgular MilCAM belleğine aktarildi
 
 Yeni dosyalar:
 - [DEVICE_PROFILE.md](DEVICE_PROFILE.md) — cihaz envanteri

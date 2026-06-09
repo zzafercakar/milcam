@@ -13,7 +13,7 @@ Ping: 192.168.1.123 = 3 ms RTT, %0 packet loss
 
 | Port  | Servis           | Durum         | Anlamı                                  |
 | ----- | ---------------- | ------------- | ----------------------------------------- |
-| 22    | SSH              | ❌ kapalı     | dropbear/sshd başlatılmamış               |
+| 22    | SSH (dropbear)   | ✅ **AÇIK 2026-06-09 17:18** | bizim kurduğumuz dropbear 2024.86 daemon |
 | 23    | Telnet           | ❌ kapalı     | telnetd yok                               |
 | 80    | HTTP             | ❌ kapalı     | web server yok                            |
 | 8080  | CodeSys WebVisu  | ❌ kapalı     | uygulama VisuPage barındırmıyor           |
@@ -31,10 +31,22 @@ Ping: 192.168.1.123 = 3 ms RTT, %0 packet loss
 - **OPC UA kapalı** → MilCAM Faz 3 için açılması gerekecek. CODESYS'te
   Device → Communication → OPC UA Server → enable
 
-## Sonraki Adım
+## 2026-06-09 17:18 Update — SSH KURULDU
 
-Cihazın `which dropbear` veya `ls /etc/init.d/` ile SSH daemon var mı
-kontrol etmek gerek. Varsa elle başlatıp serial console'u serbest
-bırakabiliriz. Yoksa BusyBox httpd üzerinden basit bir komut-execute
-proxy kurulabilir veya CodeSys SysProcess ile uzaktan komut çalıştırılabilir
-(bkz. WORKPLAN Faz 1.1).
+Dropbear 2024.86 aarch64 statik binary cihaza cross-build edildi (host glibc
+2.39 ≠ cihaz glibc 2.29 mismatch nedeniyle dinamik link segfault verdi,
+statik link cozdu). Detaylar: [DROPBEAR_INSTALL_2026-06-09.md](DROPBEAR_INSTALL_2026-06-09.md).
+
+Komut:
+```bash
+ssh -i ~/.ssh/milcam_id root@192.168.1.123
+```
+
+Public key + ed25519 + host key initial bootstrap ile sifirdan calisir.
+Init.d script (`/etc/init.d/S60dropbear`) boot'ta otomatik dropbear baslatir.
+
+## Gelecek
+
+USB Realtek Ethernet baglantisi cihazi host subnet'ine yaklasstirabilir,
+bu durumda host'a giden geri-route da kurulabilir. WORKPLAN Faz 0.8'in
+ikinci asamasi.
