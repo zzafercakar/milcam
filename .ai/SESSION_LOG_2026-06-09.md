@@ -66,7 +66,32 @@ takmaya basladi.
 8. `ls -l /root` cikti — CodeSys 3.15.20 runtime, Modbus dosyalari,
    GPIO/touch/SPI test binary'leri gorulebildi.
 
-### 5. Tum bulgular MilCAM belleğine aktarildi
+### 5. Full envanter cihazdan otomatik cekildi (aksam seans)
+
+Engeller asildi:
+- **`dialout` grubunda degildim** → kullanici `sudo chmod o+rw /dev/ttyS0`
+- **ModemManager** seri portu probe ediyordu → `sudo systemctl stop ModemManager`
+- **Zombi root SCREEN process** (PID 31899) → `sudo killall screen` + VMware
+  port disconnect/connect
+
+Otomatik script ile cihazdan envanter cekildi (stty + arka plan cat reader +
+`printf '%s\r'` ile komut gonderme + sentinel marker pattern).
+
+**Sonuc: PLAN A onaylandi.**
+
+- RAM: 2 037 148 kB (~2 GB)
+- Disk: 13.8 GB eMMC, 12.6 GB free
+- CPU: 4× ARM Cortex-A53 aarch64
+- SoC: NXP i.MX 8M (cmdline 0x30890000)
+- Kernel: Linux 4.14.98-rt53 **PREEMPT-RT** SMP
+- OS: Buildroot 2019.08
+- GPU: DRM/KMS DSI panel (Mesa kullanilabilir)
+- SSH: YOK, vsftpd VAR (FTP transfer hazir)
+- CodeSys 3.15.20, CODESYSControl.cfg'de `[SysProcess]` YOK
+
+Ham log: [DEVICE_INVENTORY_2026-06-09.log](DEVICE_INVENTORY_2026-06-09.log).
+
+### 6. Tum bulgular MilCAM belleğine aktarildi
 
 Yeni dosyalar:
 - [DEVICE_PROFILE.md](DEVICE_PROFILE.md) — cihaz envanteri

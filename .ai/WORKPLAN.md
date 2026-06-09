@@ -17,7 +17,22 @@ Hazir komut blogu DEVICE_PROFILE.md'nin sonunda.
 
 ---
 
-## Faz 0.7 — Donanim Envanteri  🔜 (siradaki ILK is)
+## Faz 0.7 — Donanim Envanteri  ✅  (2026-06-09 tamamlandi)
+
+**Bulgular:**
+- RAM 2 GB, disk 12.6 GB free, aarch64 Cortex-A53 × 4
+- SoC: NXP i.MX 8M, Buildroot 2019.08, **PREEMPT-RT** kernel 4.14.98
+- DRM/KMS DSI panel (Mesa/GPU kullanilabilir)
+- SSH YOK, vsftpd VAR, CODESYSControl.cfg'de SysProcess **yok**
+
+**Karar: PLAN A onaylandi.** MilCAM cihaza deploy edilebilir.
+
+Tam rapor: [DEVICE_PROFILE.md](DEVICE_PROFILE.md) "GERÇEK ÇIKTI" bölümü.
+Ham log: [DEVICE_INVENTORY_2026-06-09.log](DEVICE_INVENTORY_2026-06-09.log).
+
+---
+
+## Faz 0.8 — Cihazi MilCAM icin Hazirla  🔜 (siradaki)
 
 **Amac:** Cihazin RAM/CPU/disk/GPU profilini ogrenmek. MilCAM mimari plan
 A/B/C secimini bu belirleyecek.
@@ -36,6 +51,52 @@ serial console'a yapistir, ciktiyi "GERCEK CIKTI" bolumune yapistir.
 
 **Kabul kriteri:** Donanim envanteri DEVICE_PROFILE.md'de tamamen dolduruldu.
 Plan A/B/C secimi belirlendi.
+
+---
+
+**Amac:** Cihazi MilCAM deploy'una hazirla.
+
+**Adimlar:**
+
+1. **CODESYSControl.cfg'ye SysProcess izni ekle.** Cihazda:
+   ```sh
+   cat >> /root/CODESYSControl.cfg <<'EOF'
+
+   [SysProcess]
+   Command=AllowAll
+   EOF
+   ```
+   Sonra CodeSys runtime'i restart et:
+   ```sh
+   /etc/init.d/*codesys* restart    # veya benzer init script
+   ```
+
+2. **Dropbear SSH'yi cihaza koy** (cross-build aarch64 statik binary).
+   Buildroot tarball'undan veya başka bir aarch64 Linux'tan kopyala:
+   ```sh
+   # Host'tan:
+   scp dropbear root@192.168.1.123:/usr/sbin/      # SSH yok, FTP gerek
+   # vsftpd ile FTP:
+   ftp 192.168.1.123                                # anonymous OK mi kontrol
+   ```
+   Yoksa serial ile base64 paste ile yükle (yavaş ama çalışır).
+
+3. **TargetVisu pencereli mod** (MilCAM ile koeksistans için). CODESYSControl.cfg:
+   ```ini
+   [CmpTargetVisu]
+   WindowPositionX=0
+   WindowPositionY=48
+   WindowSizeWidth=1024
+   WindowSizeHeight=720
+   ```
+
+4. `wmctrl` cihazda var mi kontrol et:
+   ```sh
+   which wmctrl
+   ```
+   Yoksa cross-build + kopyala. MilCAM SendToCodesys + SwitchToHmi bunu kullanir.
+
+**Kabul:** SSH cihaza çalışıyor, SysProcess izinli, TargetVisu windowed mode test edildi.
 
 ---
 

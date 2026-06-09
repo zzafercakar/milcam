@@ -4,7 +4,66 @@ Karsilasilan teknik sorunlar, root cause, cozumler. Yeni en uste.
 
 ---
 
-## 2026-06-09 — Serial console baglantisi (3 girisim, basarili)
+## 2026-06-09 (aksam) — Full envanter cekildi, Plan A onaylandi
+
+**Olay:** Serial console acildiktan sonra, cihaza host'tan otomasyonlu komut
+gondererek tum donanim envanteri toplanmasi gerekiyordu.
+
+**Engeller (sirayla cozuldu):**
+
+1. **Yetki:** `/dev/ttyS0` `dialout` grubunda; embed user `dialout`'ta degildi
+   ve sudo passwordless yoktu. Cozum: kullanici `sudo chmod o+rw /dev/ttyS0`
+   ile gecici dunya-yazilabilir yapti.
+
+2. **ModemManager kilidi:** stty "Device or resource busy" verdi. Sistemde
+   `ModemManager.service` aktifti ve seri port'u probe ediyordu. Cozum:
+   kullanici `sudo systemctl stop ModemManager`.
+
+3. **Zombi screen process:** Onceki seans'tan kalan root altinda
+   detached SCREEN process (PID 31899) port'u tutuyordu. fuser/lsof onu
+   gormedi (kullanicidan sudo gerek), ama `ps -ef | grep SCREEN` ortaya
+   cikardi. Cozum: `sudo killall screen` + VMware Settings → Removable
+   Devices → Serial → Disconnect/Connect (kernel-level port reset).
+
+**Cekim metodu:**
+
+Yetkiler temizlendikten sonra otomatik script ile:
+```bash
+stty -F /dev/ttyS0 115200 cs8 -cstopb -parenb -ixon -ixoff -crtscts raw -echo
+timeout 55 cat /dev/ttyS0 > /tmp/serial.log &
+# Komutlari send() helper'i ile 1-3 sn uyku ile gonder
+```
+
+Sentinel marker pattern: her komut oncesi `echo "--- isim ---"` ile
+bolum ayraci. Bu pattern busybox shell uzerinde calisti ve log
+parse edilebilir kaldi.
+
+**Sonuclar (ozet):**
+
+- **Plan A onaylandi.** RAM 2 GB, Disk 12.6 GB free, DRM/KMS var.
+- SoC **NXP i.MX 8M** (cmdline 0x30890000), 4× Cortex-A53 aarch64
+- **PREEMPT-RT kernel** (RT-aware — bonus!)
+- SSH yok (Faz 0.8'de eklenecek), vsftpd var (FTP transfer hazir)
+- CODESYSControl.cfg'de `[SysProcess]` bolumu YOK — eklenmesi gerek
+
+Ham log: [DEVICE_INVENTORY_2026-06-09.log](DEVICE_INVENTORY_2026-06-09.log)
+(224 satir, 6422 byte)
+
+**Kalici onlemler:**
+
+- [DEVICE_PROFILE.md](DEVICE_PROFILE.md) tam canli envanter + Plan A
+  gerekcesi
+- [WORKPLAN.md](WORKPLAN.md) Faz 0.7 ✅, Faz 0.8 (cihaz hazirligi) eklendi
+- VS Code workspace: tek-klasor moda gecirildi (user tercihi)
+- ModemManager geri baslamasin diye disable kalici cozum:
+  ```bash
+  sudo systemctl disable ModemManager
+  ```
+  (kullanici karari)
+
+---
+
+## 2026-06-09 (oglen) — Serial console baglantisi (3 girisim, basarili)
 
 **Olay:** VEC-VE'ye RS232 uzerinden Linux shell erisimi gerekti. Uc adimda
 basarildi.

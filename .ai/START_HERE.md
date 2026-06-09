@@ -114,13 +114,22 @@ cmake --build build-overlay
 sudo cmake --install build-overlay
 ```
 
-## Mevcut Durum (2026-06-08, akşam revizyon)
+## Mevcut Durum (2026-06-09, akşam revizyon)
 
 - **Faz 0 (eski iskelet) — IPTAL.** Yanlis mimari (kendi QML UI), tamamen silindi.
-- **Faz 0.5 — Yeni iskelet:** TAMAMLANDI. CodesysBridge C++ + CPython binding,
+- **Faz 0.5 — Yeni iskelet:** TAMAMLANDI 2026-06-08. CodesysBridge C++ + CPython binding,
   Mod/MilCAM Python overlay, CMakeLists wraps FreeCAD with BUILD flags,
   postprocessor + 3 komut + 3 ikon, pytest smoke.
-- **Faz 1 — Build dogrulamasi:** SIRADAKI. End-to-end build hic denenmedi.
+- **Faz 0.6 — Cihaz erisimi:** TAMAMLANDI 2026-06-09 ogle. RS232 serial console
+  (115200 8N1 no flow control). `ls -l /root` ve network probe yapildi.
+- **Faz 0.7 — Donanim envanteri:** ✅ TAMAMLANDI 2026-06-09 aksam.
+  **Plan A onaylandi** — RAM 2 GB, Disk 12.6 GB, aarch64 Cortex-A53 ×4,
+  NXP i.MX 8M SoC, PREEMPT-RT kernel, DRM/KMS DSI panel. Detay:
+  [DEVICE_PROFILE.md](DEVICE_PROFILE.md).
+- **Faz 0.8 — Cihaz hazirligi:** 🔜 SIRADAKI. CODESYSControl.cfg'ye
+  `[SysProcess]` ekle + dropbear cross-build + TargetVisu windowed
+  konfig + wmctrl kontrol.
+- **Faz 1 — Build dogrulamasi:** Faz 0.8 sonrasi. End-to-end build hic denenmedi.
   FreeCAD'in `add_subdirectory` ile cagirildiginda BUILD flag'lerinin
   beklenildigi gibi calistigi dogrulanmali.
 - **Faz 2 — Workbench gorunurluk testi:** Bekliyor.

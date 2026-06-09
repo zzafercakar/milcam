@@ -1,8 +1,9 @@
 {
   "folders": [
-    { "name": "MilCAM (overlay + CMake)", "path": "." },
-    { "name": "FreeCAD upstream (read-only)", "path": "../../../Downloads/FreeCAD-main-1-1-git" },
-    { "name": "CADNC (sibling, different architecture)", "path": "../CADNC" }
+    {
+      "name": "CADNC (sibling, different architecture)",
+      "path": "../CADNC"
+    }
   ],
   "settings": {
     "cmake.sourceDirectory": "${workspaceFolder:MilCAM (overlay + CMake)}",

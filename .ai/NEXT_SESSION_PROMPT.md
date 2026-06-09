@@ -5,33 +5,38 @@
 ```
 Read .ai/START_HERE.md
 Read .ai/context.yaml
-Read .ai/DEVICE_PROFILE.md          ← yeni, cihaz envanteri
-Read .ai/SERIAL_CONSOLE_ACCESS.md   ← yeni, baglanti rehberi
-Read .ai/WORKPLAN.md                ← Faz 0.7 yeni eklendi
+Read .ai/DEVICE_PROFILE.md           ← canli envanter, Plan A onayli
+Read .ai/SERIAL_CONSOLE_ACCESS.md    ← baglanti rehberi
+Read .ai/WORKPLAN.md                 ← Faz 0.8 (cihazi hazirla) siradaki
 Read .ai/ARCHITECTURE.md
-Read .ai/ENGINEERING_LOG.md         ← 2026-06-09 girisi
+Read .ai/ENGINEERING_LOG.md          ← 2026-06-09 girisleri
+Read .ai/DEVICE_INVENTORY_2026-06-09.log  ← ham serial cikti
 ```
 
-## Sonraki Beklenen Adim (2026-06-09 itibariyle)
+## Sonraki Beklenen Adim (2026-06-09 aksami itibariyle)
 
-**Faz 0.7 — VEC-VE'den TAM donanim envanteri al.**
+**Faz 0.7 — Donanim Envanteri** ✅ TAMAMLANDI 2026-06-09 18:00.
+Sonuc: **Plan A onaylandi.** Detaylar: [DEVICE_PROFILE.md](DEVICE_PROFILE.md).
 
-Onceki oturumda VEC-VE'ye serial console baglantisi kuruldu
-(115200 8N1 no flow control, `/dev/ttyS0`). `ls -l /root` cikti, network
-probe yapildi (port 11740 acik, SSH kapali). Ama RAM/CPU/disk/GPU
-bilgileri henuz alinmadi.
+Ozet:
+- RAM: 2 GB (1.7 GB free idle)
+- CPU: 4× Cortex-A53 (NXP i.MX 8M), aarch64
+- Disk: 13.8 GB eMMC, 12.6 GB free
+- Kernel: Linux 4.14.98-rt53 **PREEMPT-RT** (RT-aware)
+- OS: Buildroot 2019.08
+- GPU: DRM/KMS DSI panel (`/dev/dri/card0`)
+- SSH: YOK (eklenmesi gerek)
+- vsftpd: VAR (dosya transfer icin hazir)
+- CodeSys: 3.15.20, CODESYSControl.cfg'de **[SysProcess] yok**
 
-**Adim:**
+**Faz 0.8 — Cihazi MilCAM icin hazirla.** 🔜 SIRADAKI
 
-1. Cihaza serial console ile bagla:
-   ```bash
-   sudo screen /dev/ttyS0 115200,cs8,-ixon,-ixoff,-crtscts
-   ```
-2. ENTER bas, `#` prompt'una gelmeli.
-3. [.ai/DEVICE_PROFILE.md](.ai/DEVICE_PROFILE.md)'nin sonundaki "tek-blok
-   komut"u kopyala, terminale yapistir.
-4. Cikan ciktiyi DEVICE_PROFILE.md'nin "GERCEK CIKTI" bolumune yapistir.
-5. WORKPLAN.md Faz 0.7 karar agacina gore Plan A/B/C sec.
+1. CODESYSControl.cfg'ye `[SysProcess] Command=AllowAll` ekle
+2. Dropbear cross-build + cihaza FTP ile yukle (SSH erisimi icin)
+3. TargetVisu pencereli mod konfig (WindowType=0, koordinatlar)
+4. wmctrl varligini kontrol; yoksa cross-build
+
+Detay: WORKPLAN.md Faz 0.8.
 
 **Ondan sonra Faz 1 — Ilk End-to-End Build Denemesi.**
 

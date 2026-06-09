@@ -28,10 +28,14 @@ Kaynak: `doc/VEC-VE-MU-AH 12 inch.pdf` + `doc/How to Run FreeCAD(2).docx`.
 | Ozellik       | Deger                                      |
 | ------------- | ------------------------------------------ |
 | Model         | VEC-VE-MU-AH 12 inch                       |
-| CPU           | Quad-core ~1.6 GHz Cortex-A sınıfı (ARM)   |
-| **Arch**      | **aarch64 (ARM 64-bit)** — DOGRULANDI 2026-06-09 (FreeCAD AppImage adi `...aarch64...`) |
-| RAM           | **DATASHEET'TE BELIRTILMEMIS** — Faz 0.7'de ölçülecek (cihazda `free -h`) |
-| Disk          | microSD (TICard) + dahili flash            |
+| CPU           | **4× Cortex-A53** (ARM Limited, part 0xd03), HW AES/SHA/CRC/NEON — DOĞRULANDI 2026-06-09 |
+| **SoC**       | **NXP i.MX 8M** serisi (Mini veya Plus) — cmdline 0x30890000 |
+| **Arch**      | **aarch64 (ARM 64-bit)** — DOGRULANDI 2026-06-09 (`uname -a`) |
+| RAM           | **2 GB** (2 037 148 kB) — DOĞRULANDI 2026-06-09 (`free -h`)  |
+| **Kernel**    | **Linux 4.14.98-rt53 PREEMPT-RT SMP** (build 2022-05-12) — DOĞRULANDI |
+| **OS**        | **Buildroot 2019.08** — DOĞRULANDI                            |
+| Disk          | **eMMC 13.8 GB, 12.6 GB free** (`/dev/mmcblk2p2`) — DOĞRULANDI |
+| GPU/Display   | **DRM/KMS DSI panel** (`/dev/dri/card0`, card0-DSI-1)         |
 | Ekran         | 12" 1024×768 TFT, PLED backlight 50K saat  |
 | Touch         | 4-tel dirençli, ±%2 doğruluk               |
 | OS            | Embedded Linux (busybox userland)          |
