@@ -1,0 +1,311 @@
+================================================================================
+CODESYS SOFTMOTION CNC İÇİN CAM / G-CODE ÜRETİMİ — BİRLEŞİK ARAŞTIRMA RAPORU
+Hazırlayan: Claude (Anthropic) — İki bağımsız derin araştırmanın sentezi
+Tarih: Haziran 2026
+Amaç: Claude'a (veya başka bir AI asistana) yardımcı referans dokümanı
+================================================================================
+
+--------------------------------------------------------------------------------
+0. YÖNETİCİ ÖZETİ
+--------------------------------------------------------------------------------
+- CODESYS SoftMotion CNC'yi doğrudan hedefleyen, raftan hazır (açık kaynak veya
+  ticari) bir CAM yazılımı veya yayınlanmış olgun bir post-processor YOK.
+- Temel neden: CODESYS'in DIN 66025 dialect'i, standart ISO/Fanuc G-code'dan
+  ciddi şekilde sapar (G20, G70/G71, G98/G99 gibi kodlar tamamen farklı anlam
+  taşır; canned cycle desteği yoktur).
+- Pazar kanıtı: Çok benzer DIN 66025 tabanlı Beckhoff TwinCAT NC (TX1260) için
+  bile Autodesk Fusion post kütüphanesinde generic post bulunmuyor; forumda
+  çözüm olarak ücretli özel post geliştirme öneriliyor.
+- Gerçekçi üç strateji:
+  (A) Genel CAM (FreeCAD/Fusion/Vectric/SheetCAM) + özel CODESYS post-processor
+  (B) CAM-bağımsız ISO -> CODESYS translator katmanı (ürünleştirilebilir)
+  (C) Kendi CAM yazılımı (MilCAD yolu: OpenCASCADE + opencamlib / ModuleWorks)
+
+--------------------------------------------------------------------------------
+1. CODESYS CNC'NİN KABUL ETTİĞİ G-CODE DİLİ (DIN 66025 ALT KÜMESİ)
+--------------------------------------------------------------------------------
+CODESYS, DIN 66025'in yalnızca yol (path) oluşturmaya yarayan kısmını destekler;
+konsept IEC 61131 içine gömülü olduğu için dilin tamamı desteklenmez.
+
+Resmi desteklenen komut seti (CODESYS SoftMotion datasheet):
+- G1  : Lineer interpolasyon
+- G2/G3 : Dairesel interpolasyon (CW/CCW)
+- G4  : Bekleme (dwell) — DİKKAT: M-fonksiyonu gibi sayılır (64'lük limite dahil)
+- G5/G10 : Spline interpolasyon
+- G6  : Parabol interpolasyonu
+- G8/G9 : Elips interpolasyonu
+- G16–G19 : Dairesel yaylar için interpolasyon düzlemi seçimi
+- G20 : KOŞULLU ATLAMA (conditional jump) — Fanuc'taki inch modu DEĞİL!
+- G31 : Probing fonksiyonu
+- G36/G37 : Değişken yazma / artırma
+- G40–G42 : Takım yarıçap telafisi (SMC_ToolCorr/SMC_ToolRadiusCorr)
+- G43 : Takım boyu telafisi (SMC_ToolLengthCorr) — Fanuc H-word mantığından farklı
+- G50/G51/G52 : Köşe yuvarlatma ve yumuşatma (SMC_RoundPath/SMC_SmoothPath)
+- G53–G56 : Koordinat sistemi kaydırma (Fanuc work offset semantiğinden farklı)
+- G60/G61/G70/G71 : Loop suppression (SMC_AvoidLoop) — preprocessing modülleri
+- G75 : Senkronizasyon / zaman elemanı (M-dizisi limitini aşmak için de kullanılır)
+- G90/G91 : Mutlak / artımsal koordinat
+- G92 : Hareketsiz pozisyon ayarlama (set position without move)
+- G98/G99 : I/J merkez değerlerinin MUTLAK/GÖRELİ yorumlanması
+            (Fanuc'taki canned cycle dönüş düzlemi DEĞİL!)
+- M    : M-fonksiyonları (anlamı SİSTEM tarafından tanımlı değil; uygulama işler)
+- H    : Path tappets (switch noktaları)
+- F    : Hız (path birimi/saniye — mm/dakika DEĞİL)
+- E / E- : İvme / yavaşlama (acceleration / deceleration) kelimeleri
+- IEC değişkenleri kullanılabilir ($var$, LET #x : LREAL := ... sözdizimi)
+
+Desteklenen eksen harfleri:
+- X, Y, Z : Birincil interpolasyon eksenleri
+- A, B, C : Oryantasyon eksenleri (splined)
+- P, Q, U, V, W : Ek lineer eksenler
+
+Program yapısı kuralları:
+- Program ZORUNLU olarak "%" ile başlar; yanına opsiyonel program adı yazılır.
+  Örnek:
+    % MyProgram
+    N10 G01 X100 Y100 E100 F100 E-200
+    N20 G01 Z40 F20
+    N30 G03 X-100 R200 F100
+    N40 SubPrg{5}
+- Alt program çağrısı: SubPrg{n} süslü parantez sözdizimi (M98 P.. DEĞİL).
+- Her satır N blok numarası ile yazılır (zorunlu değil ama örnekler ve debug
+  pratiği bu yönde).
+
+--------------------------------------------------------------------------------
+2. MASTER DIALECT TUZAK TABLOSU (DOĞRULANMIŞ)
+--------------------------------------------------------------------------------
+Kod         | Fanuc/ISO anlamı            | CODESYS anlamı                  | Post kuralı
+------------|-----------------------------|---------------------------------|---------------------------
+G20         | Inch modu                   | KOŞULLU ATLAMA                  | [KRİTİK] Asla üretme
+G70/G71     | Inch/mm (Siemens)           | LOOP SUPPRESSION                | [KRİTİK] Asla üretme
+G98/G99     | Canned cycle dönüş düzlemi  | I/J mutlak/göreli yorumu        | [KRİTİK] Asla üretme;
+            |                             |                                 | I/J'yi hep göreli üret
+G81–G89     | Delik çevrimleri            | DESTEKLENMİYOR                  | [KRİTİK] G0/G1/G4'e expand
+G54–G59     | Work offset                 | G53–G56 koordinat shift         | [ORTA] Test et veya
+            |                             | (farklı semantik)               | koordinata göm
+G43 H..     | Takım boyu telafisi         | Farklı mekanizma                | [ORTA] Sadeleştir
+            |                             | (SMC_ToolLengthCorr)            |
+F           | mm/dakika                   | Birim/saniye                    | [ORTA] Dönüştür;
+            |                             |                                 | E/E- ivme kelimeleri ekle
+M98/M99     | Alt program                 | SubPrg{n} sözdizimi             | [ORTA] Remap
+64+ ardışık | —                           | SMC_DEC_OUTQUEUE_RAN_EMPTY      | [ORTA] Otomatik G75
+M veya G4   |                             | decoder hatası                  | enjeksiyonu
+T, S        | Takım seçimi / spindle hızı | Sistem semantiği yok            | [ORTA] M-parametresine
+            |                             |                                 | çevir veya comment'e al
+% başlık    | Opsiyonel                   | ZORUNLU ilk satır               | [KOLAY] Her dosyaya ekle
+G92         | Koordinat set               | Desteklenir (hareketsiz set);   | [KOLAY] Bilinçli kullan
+            |                             | ardışık G92'lerde sonuncusu     |
+            |                             | geçerli; pozisyon sıçraması     |
+            |                             | yaratır (gap detection tetikler)|
+
+G92 davranış detayı:
+- Program başında start pozisyonu ayarlar; ortada hedef pozisyon sıçraması
+  yaratır. SMC_ControlAxisByPos bu sıçramayı gap olarak algılar (bStopIpo).
+- Ardışık birden fazla G92 varsa sadece sonuncusu dikkate alınır; öncekilerin
+  de çıkması isteniyorsa araya aynı koordinatlarla G1 eklenmelidir.
+
+M-fonksiyonu davranışı (güvenlik açısından kritik):
+- M-fonksiyonlarının anlamı (M3=spindle aç vb.) CODESYS sisteminde TANIMLI
+  DEĞİLDİR. Interpolator M'de durur, M numarasını uygulamaya verir ve uygulama
+  acknowledge edene kadar bekleyebilir.
+- PLC uygulamasında M numarası -> spindle/coolant/clamp/vakum/kapı/alarm
+  eşlemesi (state machine + ack) kurulmalıdır.
+- Üst üste maksimum 64 M-fonksiyonu sınırı vardır (G4'ler de sayılır); aşılırsa
+  SMC_DEC_OUTQUEUE_RAN_EMPTY hatası oluşur. Çözüm: dizinin öncesine G75 eklemek.
+
+--------------------------------------------------------------------------------
+3. CODESYS RUNTIME TARAFI — CAM ÇIKTISINI YUTACAK MEKANİZMA
+--------------------------------------------------------------------------------
+- CNC programı üç derleme modunda olabilir: SMC_OutQueue, SMC_CNC_REF, FILE.
+  FILE modunda G-code dosyası PLC dosya sistemine indirilir ve fonksiyon
+  bloklarıyla okunur.
+- Örnek proje: CNC05_File.project (CODESYS kurulum dizini, SoftMotion\Examples)
+  — büyük G-code programlarının PLC'deki ASCII dosyadan okunmasını gösterir.
+- Modern zincir: SMC_ReadNCFile2 + SMC_NCInterpreter
+  (SMC_NCDecoder ve SMC_ReadNCFile legacy'dir; yenileri matematiksel ifadeler
+  ve G-code içi alt program desteği sunar.)
+- Akış: SMC_ReadNCFile2 -> SMC_NCInterpreter -> SMC_GeoInfo kuyruğu
+  (SMC_OutQueue) -> preprocessing FB'leri (SMC_SmoothPath, SMC_ToolCorr vb.)
+  -> SMC_Interpolator -> SMC_ControlAxisByPos / kinematik dönüşüm -> sürücüler.
+- Streaming mimarisi: Milyonlarca satırlık dosyada bile tüm path'i bellekte
+  tutmaya gerek yoktur; ~100 SMC_GeoInfo elemanlık queue yeterlidir.
+  (Devasa nSizeOutQueue değerleri önerilmez.)
+- Interpolator'ın başlangıç pozisyonu: SMC_NCInterpreter'ın start position
+  girişinden (File/SMC_CNC_REF modunda) veya CNC nesnesi Properties > CNC
+  sekmesinden (SMC_OutQueue modunda) ayarlanır. Ayarlanmazsa X0 Y0'dan
+  başladığı varsayılır ve gereksiz gap/bStopIpo oluşur.
+
+CODESYS'in kendi içindeki "CAM-lite" yetenekler (çoğu kişi atlar):
+- 3D CNC editör (DIN 66025): eşzamanlı grafik + metin editörü
+- Path preprocessing önizlemesi (köşe yumuşatma etkileri vb.)
+- Path pre-interpolation (pozisyon/hız/ivme/jerk eğrilerinin offline önizlemesi)
+- DXF IMPORT (2D/2.5D işler için mini-CAM gibi kullanılabilir)
+- Dosyadan okuma / dosyaya kaydetme
+- G-code içinde döndürme / öteleme / ölçekleme dönüşümleri
+- Tabloya dönüştürme; program bilgisi (path uzunluğu, süresi, nesne sayısı)
+- Visualization içinde online CNC program düzenleme
+- Virtual drives (sanal eksenler) ile test imkânı
+
+--------------------------------------------------------------------------------
+4. CAM SEÇENEKLERİ KARŞILAŞTIRMASI
+--------------------------------------------------------------------------------
+CAM             | Post mimarisi       | Zorluk    | Maliyet      | Not
+----------------|---------------------|-----------|--------------|------------------------------
+FreeCAD CAM     | Python .py post     | DÜŞÜK     | Ücretsiz/OSS | Açık kaynak için en iyi
+(Path WB)       | (*_post.py, makro   |           |              | başlangıç; fork trivial;
+                | klasörüne eklenir)  |           |              | linuxcnc_post.py iyi baz
+Fusion 360 /    | JavaScript .cps     | ORTA      | Abonelik     | En geniş toolpath yeteneği
+Inventor CAM    | (onOpen, onSection, |           |              | (adaptive, 3D, 3+1);
+                | onLinear vb.)       |           |              | CODESYS postu resmi yok
+Vectric VCarve  | Metin tabanlı .pp   | ÇOK DÜŞÜK | ~$350–$2000  | Ahşap/router/2.5D; post
+/ Aspire        |                     |           |              | yazımı saatler sürer
+SheetCAM        | Lua .scpost         | DÜŞÜK     | ~$150        | Plazma/su jeti/2D kesim;
+                |                     |           |              | M/H -> PLC çıkış eşlemesi kolay
+DeskProto       | Post kütüphanesi    | DÜŞÜK     | Düşük        | Basit 3D milling/prototip/
+                | kopyala-düzenle     |           |              | eğitim; CAM yeteneği sınırlı
+ESTLCAM         | Sabit dialect'ler   | YÜKSEK    | ~€50         | Post özelleştirme zayıf —
+                |                     |           |              | CODESYS için UYGUN DEĞİL
+Mastercam /     | Ticari post dev.    | YÜKSEK    | $$$$         | Endüstriyel 5 eksen
+hyperMILL / NX  | (bayiden alınır)    |           |              | gerekiyorsa
+
+Doğrulama araçları (CAM değil):
+- CAMotics: Açık kaynak, ücretsiz 3 eksen G-code simülatörü (Win/Linux/macOS).
+  Post çıktısının görsel ön kontrolü için faydalı.
+- NC Viewer: Hızlı online toolpath kontrolü.
+- UYARI: Bu araçlar Fanuc/LinuxCNC semantiğiyle simüle eder; CODESYS'e özgü
+  E kelimelerini ve G98/G99'u YANLIŞ yorumlar. Nihai doğrulama mutlaka
+  CODESYS CNC editör grafik önizlemesi + virtual axes üzerinde yapılmalıdır.
+
+Kendi CAM'ini yazmak için kernel seçenekleri:
+- opencamlib (OCL): Açık kaynak 3D drop-cutter/waterline kernel (FreeCAD da
+  opsiyonel kullanır).
+- libarea / Clipper2: 2.5D pocket/profil offset.
+- ModuleWorks / MachineWorks: Ticari, endüstriyel sınıf toolpath + simülasyon
+  SDK'ları (5 eksen, çarpışma kontrolü). OEM CNC ürünü için uzun vadede en
+  profesyonel seçenek; lisans maliyeti ciddi.
+
+--------------------------------------------------------------------------------
+5. ÜÇ STRATEJİ — MİMARİ
+--------------------------------------------------------------------------------
+  CAD/DXF/STEP
+      |
+      +--> (A) Genel CAM (FreeCAD/Fusion/Vectric/SheetCAM)
+      |        |--> Özel CODESYS post (.py/.cps/.pp/.scpost)
+      |        |--> veya standart ISO post --> (B) ISO->CODESYS TRANSLATOR
+      |
+      +--> (C) Kendi CAM (MilCAD: OpenCASCADE + Qt + OCL/ModuleWorks)
+      |
+      v
+  Temiz DIN 66025 CODESYS alt kümesi (.cnc dosyası)
+      |
+      v
+  Çift doğrulama: CAMotics/NC Viewer (görsel) + CODESYS editör/virtual axes (nihai)
+      |
+      v
+  PLC: SMC_ReadNCFile2 -> SMC_NCInterpreter (~100 GeoInfo streaming queue)
+      -> preprocessing FB'leri -> SMC_Interpolator
+      -> M-function layer (spindle/coolant/clamp ack state machine)
+      -> SoftMotion axes / EtherCAT / CANopen sürücüler
+
+Strateji B'nin ticari değeri: Müşterinin hangi CAM'i kullandığı önemsizleşir
+("hangi CAM'i kullanıyorsan kullan, biz CODESYS'e çeviriyoruz" konumlandırması).
+HMI'a veya yönetim yazılımına gömülü "import any G-code" özelliği olarak
+ürünleştirilebilir. Mevcut bir G-code offset/scaling aracı, canned cycle
+expansion + kod remapping + F/E dönüşümü eklenerek tam translator'a evrilir.
+
+--------------------------------------------------------------------------------
+6. CODESYS POST-PROCESSOR KURALLARI (CHECKLIST)
+--------------------------------------------------------------------------------
+1.  Header: "%<program_adı>" satırı her dosyanın ilk satırı olmalı.
+2.  G20/G21 ASLA üretme (unit'i CAM tarafında mm'e sabitle).
+3.  G70/G71 ASLA üretme.
+4.  G98/G99 ASLA üretme; yay merkezlerini (I/J) her zaman varsayılan göreli
+    formatta üret. R (radius) formatını ayrıca golden sample ile doğrula.
+5.  Canned cycle (G81–G89) üretme; delik çevrimlerini G0/G1/G4 hareketlerine aç.
+6.  F değerini mm/dak -> birim/sn çevir; makine limitlerinden E (ivme) ve
+    E- (yavaşlama) kelimelerini ekle.
+7.  M-kod setini PLC'deki SMC_M işleyiciyle hizala; M3/M5/M6/M8/M9'u
+    application-specific kabul et. 64+ ardışık M/G4 riskinde otomatik G75 enjekte et.
+8.  T, S, H, D alanlarını ya comment'e al ya da anlaşmalı M-parametresine çevir.
+9.  Work offset'leri (G54+) G53–G56 semantiğine map et veya post'ta
+    koordinatlara göm.
+10. Alt programları SubPrg{n} sözdizimine remap et (veya inline expand et).
+11. Yay düzlemini G16–G19 ile tutarlı üret.
+12. Her satıra N blok numarası koy (debug kolaylığı).
+13. Dosya sonunda güvenli duruş: anlaşmalı bir M kodu + uygulama tarafında
+    kontrollü stop mantığı.
+14. Önce virtual axes ile test et; gerçek makinede düşük hızla başla.
+
+Güvenli başlangıç alt kümesi (örnek çıktı formatı):
+    % JOB_NAME
+    N10 G90
+    N20 G1 X0 Y0 Z10 F100 E500 E-500
+    N30 G1 X20 Y0 Z0 F50 E500 E-500
+    N40 G1 X20 Y20 F80
+    N50 G2 X0 Y20 I-10 J0 F80
+    N60 G1 X0 Y0 F80
+    N70 M5
+Not: M5 burada sadece bir M-fonksiyon numarasıdır; PLC uygulamasında
+karşılığı tanımlanmadıysa hiçbir şey yapmaz, sadece interpolator durup
+ack bekler.
+
+--------------------------------------------------------------------------------
+7. FAZLI GELİŞTİRME PLANI
+--------------------------------------------------------------------------------
+FAZ 0 — Golden samples / kabul kriteri:
+  15–20 elle yazılmış kısa .cnc dosyası. Senaryolar: line, arc (I/J ve R
+  formatı), feed + E kelimeleri, G92 sıçrama davranışı, G98/G99 davranışı,
+  64-M limiti + G75, SubPrg{}, tool comp (G40–G42), koordinat shift (G53–G56),
+  M-function ack akışı. Hepsi virtual axes üzerinde doğrulanır ve post'un
+  regression test suite'i olur.
+
+FAZ 1 — FreeCAD codesys_post.py:
+  linuxcnc_post.py fork'u. Kritik kodları blokla, canned cycle expansion,
+  F dönüşümü + E enjeksiyonu, % header, otomatik G75, SubPrg remap.
+  İlk sürüm sadece 3 eksen G0/G1/G2/G3 üretir.
+
+FAZ 2 — PLC M-function layer:
+  M numarası -> spindle/coolant/clamp/vakum/alarm/kapı kilidi eşlemesi;
+  ack tabanlı state machine; güvenlik analizi.
+
+FAZ 3 — Fusion .cps post + ISO->CODESYS translator ürünleştirme:
+  Müşteri yüzü: "Fusion'dan direkt bizim kontrolöre post alın."
+  Translator: HMI/yönetim yazılımına gömülü "import any G-code".
+  Not: TwinCAT için bile Fusion kütüphanesinde generic post yok — bu boşluğa
+  yayınlanan bir post, ekosistemde referans olma fırsatıdır.
+
+FAZ 4 — Kendi CAM (MilCAD) derinleştirme:
+  OpenCASCADE tarafına opencamlib (drop-cutter/waterline) entegrasyonu;
+  uzun vadede ModuleWorks SDK değerlendirmesi (5 eksen, simülasyon,
+  çarpışma kontrolü).
+
+FAZ 5 — Simülasyon ve güvenlik döngüsü:
+  CAMotics/NC Viewer görsel kontrol -> CODESYS CNC editör grafik kontrol ->
+  virtual axes -> düşük hızlı gerçek test -> üretim.
+
+--------------------------------------------------------------------------------
+8. KAYNAKLAR (DOĞRULAMA İÇİN)
+--------------------------------------------------------------------------------
+- CODESYS SoftMotion SL Datasheet (G-code komut seti, eksen harfleri, DXF
+  import, virtual drives): store.codesys.com / us.store.codesys.com
+- CODESYS Online Help (helpme-codesys.com):
+  * "Programming a Path according to DIN 66025"
+  * "DIN 66025 Fundamentals" (% header, SubPrg{} örneği)
+  * "Preprocessing - G-Code" (G40–G42, G50–G52, G60/61/70/71 modülleri)
+  * SMC_NCDecoder / SMC_NCInterpreter / SMC_ReadNCFile2 kütüphane sayfaları
+    (64 M-fonksiyon limiti, G75 çözümü, legacy uyarıları)
+  * "Creating a CNC Program" (SMC_OutQueue / SMC_CNC_REF / FILE derleme modları)
+  * "CNC Example 05: Creating CNC from a File" (CNC05_File.project)
+- CoDeSys SoftMotion V2.3 Manual (G92/G98/G99 kesin semantiği — V3'te de
+  aynı mantık geçerli; elion.es arşivi)
+- CODESYS Forge / Talk / Motion forum konuları:
+  * G-Code streaming processing (SMC_ReadNCFile2 + NCInterpreter akışı)
+  * SMC_Interpolator + SMC_ControlAxisByPos (start position, bStopIpo/gap)
+  * IPR Buffer too small (queue boyutu ~100 GeoInfo önerisi)
+- Autodesk Community: "DIN 66025 post processor for TX1260 | TwinCAT NC"
+  (generic DIN 66025 postunun Fusion kütüphanesinde olmadığının kanıtı)
+- Fusion 360 Post Processor Training Guide (JavaScript .cps mimarisi)
+
+================================================================================
+RAPOR SONU
+================================================================================
