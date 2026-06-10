@@ -60,9 +60,54 @@ $SSH 'chmod +x /root/milcam-test/core_tests && /root/milcam-test/core_tests'
 (host'ta in-tree). Cihaz için configure'da override:
 `-DMILCAM_GOLDEN_DIR=/root/milcam-test/golden`. Golden dosyayı o yola da kopyala.
 
-## SIRADAKI (P0.3 — Qt app gelince)
-Statik yol Qt için geçmez (Qt dinamik + plugin'ler). O zaman:
-- VEC-VE sysroot kur: cihaz `/usr/lib` + `/lib` rsync'le (glibc 2.29 + Qt 5.12.4 .so'lar)
-  → `/opt/sysroot/vec-ve`; Qt 5.12.4 header'larını kaynak tarball'dan ekle.
-- Toolchain dosyasına `CMAKE_SYSROOT` + Qt `CMAKE_PREFIX_PATH` ekle.
-- linuxfb QPA + evdevtouch ile "hello MilCAM" penceresi, fb0 capture ile doğrula.
+## P0.3 — Qt Widgets app (DOĞRULANDI 2026-06-10, ekranda çalışıyor)
+
+Statik yol Qt için geçmez (Qt dinamik). Çözülen reçete (script:
+[`scripts/build-app-arm64.sh`](../scripts/build-app-arm64.sh)):
+
+1. **glibc≤2.29 toolchain ŞART.** Host `aarch64-linux-gnu-g++` (gcc 13 / glibc
+   2.39) ile linklenen Qt app cihazda `version 'GLIBC_2.34' not found` (2.32/
+   2.34/2.35/2.36/2.38) verip ÇALIŞMAZ — statik core'da olmayan yeni problem,
+   çünkü orada her şey statikti, burada glibc dinamik. **Çözüm:** Bootlin 2018.11
+   aarch64 toolchain (**gcc 7.3 / glibc 2.27**). 2.27'ye linklenen binary 2.29'da
+   çalışır (eski sembol sürümleri ileri-uyumlu). İndirme:
+   `toolchains.bootlin.com/.../aarch64/tarballs/aarch64--glibc--stable-2018.11-1.tar.bz2`
+   → `$HOME/milcam-sysroot/aarch64--glibc--stable-2018.11-1/`.
+2. **Header:** desktop Qt 5.12.4 (aqt) `include/` — Qt header'ları arch-bağımsız
+   (LP64). aqt: `$HOME/milcam-sysroot/aqtenv/bin/aqt install-qt linux desktop
+   5.12.4 gcc_64 --archives qtbase --outputdir .../qt-desktop`. (qconfig.h vb.
+   üretilmiş config header'ları kaynak tarball'da YOK; aqt install'da VAR.)
+3. **Link:** cihazın gerçek `.so.5`'lerine `-l:libQt5Widgets.so.5` (versiyonlu
+   soname; cihazda dev symlink yok). Sadece `-L$SYSROOT/usr/lib` (+ rpath-link);
+   `$SYSROOT/lib`'i (cihaz libc/pthread/dl — GLIBC_PRIVATE) EKLEME → linker
+   bunları kendi 2.27 toolchain'inden alır. `--allow-shlib-undefined` ile Qt
+   `.so`'larının çözülmemiş sembollerine tolerans.
+4. **`-static-libstdc++ -static-libgcc`:** cihazın libstdc++.so.6.0.25 (GCC8) ABI
+   uyumsuzluğunu atla; C++ runtime'ı binary'ye göm. Sonuç NEEDED: yalnız
+   libQt5{Widgets,Gui,Core}.so.5 + libm/libpthread/libc.so.6 (hepsi cihazda).
+5. **moc:** desktop Qt'nin x86_64 moc'u (host aracı) — `MainWindow.h` → moc cpp.
+6. **Çalıştırma (cihaz, Xorg KAPALI, linuxfb):**
+   ```
+   QT_QPA_PLATFORM_PLUGIN_PATH=/usr/lib/qt/plugins QT_QPA_FONTDIR=/usr/lib/fonts \
+   QT_QPA_PLATFORM=linuxfb:fb=/dev/fb0 LD_LIBRARY_PATH=/usr/lib:/lib ./milcam
+   ```
+   evdevtouch Weida dokunmatiği `/dev/input/event1`'de otomatik buldu.
+7. **Doğrulama:** `dd if=/dev/fb0 bs=4096 count=768` → host'ta PIL
+   `Image.frombytes('RGB',(1024,768),data,'raw','BGRX')` → PNG. Sonuç: MilCAM
+   penceresi tam ekran, koyu tema + toolbar, SMB logosu yerini aldı. ✅
+
+**Sonuç:** GL'siz Qt Widgets app bu donanımda **çalışıyor** — standalone CAM
+kararı uçtan uca doğrulandı (post + GUI ikisi de cihazda).
+
+## Büyük SDK'lar nerede (repoya KOYMA)
+`$HOME/milcam-sysroot/` (gitignore dışı, repoda değil): `vec-ve/` (cihaz lib'leri,
+~130MB), `qt-desktop/` (Qt 5.12.4 header), `aarch64--glibc--stable-2018.11-1/`
+(Bootlin toolchain), `aqtenv/` (venv). Taze checkout'ta bu README'deki komutlarla
+yeniden üretilir.
+
+## CMake'e geçiş (sonra)
+`build-app-arm64.sh` doğrudan-g++ bir ilk-ışık spike'ı. CMake `milcam` target'ı
+(`milcam/app/CMakeLists.txt`, `MILCAM_BUILD_APP=ON`) zaten var ama find_package(Qt5)
+cihaz sysroot'unda Qt CMake config'i olmadığı için cross'ta kullanılamıyor.
+İleride: Bootlin sysroot'una Qt5 CMake config + header yerleştir, toolchain
+dosyasına `CMAKE_SYSROOT` + `CMAKE_PREFIX_PATH` ekle → tek CMake build.

@@ -4,6 +4,46 @@ Karsilasilan teknik sorunlar, root cause, cozumler. Yeni en uste.
 
 ---
 
+## 2026-06-10 (akşam) — Phase 0.3: "Hello MilCAM" Qt penceresi CİHAZDA ÇALIŞTI
+
+**Olay:** Kullanıcı panelde hâlâ SMB logosunu görüyordu ("uygulamayı atmadın mı?").
+P2 sadece headless post'tu; görsel app (Phase 0.3) yazılıp cihaza atıldı.
+
+**Yapılanlar:** GL'siz Qt Widgets "Hello MilCAM" penceresi (koyu tema, dokunmatik
+Open/HMI butonları, başlık). aarch64'e cross-derlendi, **linuxfb**'de tam ekran
+çalıştı, fb0 capture ile doğrulandı → SMB logosu yerini MilCAM penceresine bıraktı.
+
+**Engel 1 — glibc sembol uyumsuzluğu (statik core'da OLMAYAN yeni sorun):**
+Host `aarch64-linux-gnu-g++` (gcc 13 / glibc 2.39) ile linklenen app cihazda
+`version 'GLIBC_2.34' not found` (2.32–2.38) verip çalışmadı. Statik core fully
+static olduğu için bu sorunu görmemişti; Qt app'te glibc DİNAMİK. **Root cause:**
+gcc 13 + statik libstdc++ yeni glibc sembol sürümleri çekiyor, cihazda glibc 2.29.
+**Çözüm:** glibc≤2.29 toolchain → **Bootlin 2018.11 (gcc 7.3 / glibc 2.27)**.
+2.27'ye linklenen binary 2.29'da çalışır. Yeni binary yalnız `GLIBC_2.17` ister.
+
+**Engel 2 — cihaz core C lib'lerini linke karıştırma:** İlk denemede
+`-L$SYSROOT/lib` cihazın libpthread/libdl'ini (glibc 2.29) çekti; onların
+`GLIBC_PRIVATE` bağımlılıkları host glibc'sinden çözülemedi → link hatası.
+**Çözüm:** linke yalnız `$SYSROOT/usr/lib` (Qt + libpng/freetype vb.) ver;
+libc/pthread/dl toolchain'den gelsin; `--allow-shlib-undefined`.
+
+**Engel 3 — Qt config header'ları:** qtbase kaynak tarball'ında `qconfig.h` YOK
+(configure-üretimi). **Çözüm:** aqtinstall ile Qt 5.12.4 desktop `include/`
+(üretilmiş header'larla); arch-bağımsız (LP64), aarch64'e uyar. Link ise cihazın
+gerçek `.so.5`'lerine (`-l:libQt5X.so.5`).
+
+**ABI:** cihaz Qt'si GCC8 (libstdc++ 6.0.25); app `-static-libstdc++` ile kendi
+C++ runtime'ını taşır → ABI çakışması yok.
+
+**Sonuç (DOĞRULANDI):** evdevtouch Weida dokunmatiğini buldu, pencere 1024×768
+linuxfb'de render edildi. **Standalone CAM kararı uçtan uca kanıtlandı** (post +
+GUI ikisi de cihazda). Reçete: [TOOLCHAIN_NOTES.md](TOOLCHAIN_NOTES.md) P0.3.
+
+**Açık (kozmetik):** sol-altta küçük stray glyph; font isteği "Helvetica" eşleşmeyip
+serif fallback (Bitstream Charter) kullanıldı — sonra app font'unu DejaVu Sans'a sabitle.
+
+---
+
 ## 2026-06-10 — Standalone CAM P2 (CODESYS post) + aarch64 cross-build + CİHAZ TESTİ
 
 **Olay:** Standalone Qt 2.5B CAM kararı sonrası ilk kod: Phase 2 CODESYS

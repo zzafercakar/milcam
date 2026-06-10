@@ -8,4 +8,10 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 enable_testing()
 add_subdirectory(milcam/core)
 add_subdirectory(tests)
-# app/ added in Phase 0 (needs Qt)
+
+# The Qt Widgets GUI is opt-in (needs Qt5). Host core-tests build without it;
+# the device/app build configures with -DMILCAM_BUILD_APP=ON.
+option(MILCAM_BUILD_APP "Build the MilCAM Qt Widgets GUI app" OFF)
+if(MILCAM_BUILD_APP)
+    add_subdirectory(milcam/app)
+endif()
