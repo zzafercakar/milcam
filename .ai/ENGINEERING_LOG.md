@@ -4,6 +4,48 @@ Karsilasilan teknik sorunlar, root cause, cozumler. Yeni en uste.
 
 ---
 
+## 2026-06-10 (gece) — HMI⇄MilCAM geçişi: chvt ÖLÜ → "başlat/çık" mimarisi
+
+**Olay:** UI v2 (modern açık/mavi CAM kabuğu) cihazda çalıştı, ama sağ-üstteki
+geçiş butonu (HMI/CNC) ekranı değiştirmiyordu. Sistematik hata ayıklama ile
+kök neden arandı (tahmin yok).
+
+**Kök neden (fb0 capture'larla KANITLANDI):**
+Cihazda tek `/dev/fb0` var, tüm VT'ler paylaşıyor. Hem CodeSYS (tty1) hem MilCAM
+(tty2) doğrudan fb0'a yazan Qt linuxfb uygulamaları. **Ekranda görünen = fb0'a
+EN SON yazan; aktif VT değil.** Kanıtlar:
+1. `chvt 1` görüntüyü değiştirmedi (capA == capB, ikisi de MilCAM açık tema);
+   aktif VT hep tty1 ama ekranda MilCAM (tty2) görünüyordu → VT-aktiflik fb0
+   piksellerini KAPILAMIYOR.
+2. `chvt 2` **sonsuza dek askıda kaldı** (iki zombi chvt süreci) — CodeSYS tty1'i
+   VT_PROCESS modunda tutup release etmiyor → tty1'den uzağa geçiş bloke.
+3. MilCAM `kill` edildikten **7sn sonra bile** ekran MilCAM'in son karesinde
+   donuk kaldı → **CodeSYS kendiliğinden tam-ekran repaint YAPMIYOR.**
+
+**Sonuç:** `chvt`/VT-switch bu cihazda işe yaramaz. Değişmez kısıt: CNC'ye dönmek
+için CodeSYS'in tam-ekran TargetVisu repaint'i tetiklenmeli.
+
+**Karar (kullanıcı onayı): "başlat/çık" mimarisi.**
+- CodeSYS "MilCAM" butonu → MilCAM'i SysProcess ile BAŞLAT (`setsid /root/milcam/run.sh
+  ... &`), `chvt` DEĞİL. MilCAM fullscreen fb0'a boyar, CodeSYS'i örter.
+- MilCAM "CNC" butonu → `QApplication::quit()` (uygulamadan çık). fb0'da son kare
+  donuk kalır.
+- CodeSYS, MilCAM çıkışını algılar (`pidof milcam` poll, ~500ms) ve **tam-ekran
+  repaint** ile ekranı geri alır: ya `CurrentVisu`'yu boş bir visu'ya alıp geri
+  döndürerek, ya da tam-ekran "perde" Rectangle toggle ederek. Reçete:
+  [CODESYS_RETURN_BUTTON.md](CODESYS_RETURN_BUTTON.md).
+
+**Kod etkisi:** `HmiSwitch` artık `chvt` değil `qApp->quit()` çağırıyor; buton
+metni "HMI"→"CNC". `core/hmi/VtSwitch.h` artık kullanılmıyor (chvt yaklaşımı
+terk edildi; dosya VT bilgilerini belgelemek için duruyor, test'leri geçiyor).
+Cihaz launcher: `scripts/device/run-milcam.sh` → `/root/milcam/run.sh`.
+
+**Ek bulgu:** CodeSYS device adı "SMB ARM Cortex-Linux-SM-CNC-TV-MC"; tam bir 3
+eksenli CNC TargetVisu (G-code listesi, toolpath önizleme, jog, DRO, start/pause/
+abort) var — önceki "visualization yok" bulgusu çürütüldü.
+
+---
+
 ## 2026-06-10 (akşam) — Phase 0.3: "Hello MilCAM" Qt penceresi CİHAZDA ÇALIŞTI
 
 **Olay:** Kullanıcı panelde hâlâ SMB logosunu görüyordu ("uygulamayı atmadın mı?").

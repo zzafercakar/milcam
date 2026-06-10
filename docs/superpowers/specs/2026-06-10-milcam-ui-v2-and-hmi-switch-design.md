@@ -93,7 +93,18 @@ styled, so P1/P3 can fill behavior without touching siblings.
   compiled into the binary via a Qt resource file (`milcam/app/resources/milcam.qrc`)
   so no icon files need deploying. `QIcon` from `:/icons/...`. Touch sizes ≥48 px.
 
-## 5. HMI ⇄ MilCAM switch (VT multiplexing)
+## 5. HMI ⇄ MilCAM switch
+
+> **SUPERSEDED (2026-06-10 gece):** the VT-multiplexing (`chvt`) design below was
+> proved unworkable on the device — single `/dev/fb0` (display = last writer, not
+> active VT), `chvt 2` hangs (CodeSYS won't release tty1), and CodeSYS does not
+> auto-repaint. Replaced by the **launch/exit model**: CodeSYS launches MilCAM
+> (SysProcess), MilCAM's "CNC" button exits (`qApp->quit()`), CodeSYS forces a
+> full TargetVisu repaint to reclaim the screen. Recipe + evidence:
+> `.ai/CODESYS_RETURN_BUTTON.md` and `.ai/ENGINEERING_LOG.md` (2026-06-10 gece).
+> The original VT approach is kept below for the record.
+
+### (superseded) VT multiplexing
 
 - **Run MilCAM on tty2:** launch with `QT_QPA_PLATFORM=linuxfb:fb=/dev/fb0:tty=/dev/tty2`.
   CodeSYS keeps tty1. The deploy/launch helper and `scripts/build-app-arm64.sh`
