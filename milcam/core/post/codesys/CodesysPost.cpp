@@ -41,6 +41,12 @@ std::string postCodesys(const Toolpath& tp, const PostConfig& cfg) {
             case MoveKind::ArcCCW:b << "G3"; break;
         }
         b << " X" << num(m.x) << " Y" << num(m.y) << " Z" << num(m.z);
+        if (m.kind == MoveKind::ArcCW || m.kind == MoveKind::ArcCCW) {
+            // I/J are RELATIVE to the arc start (DIN 66025 default).
+            // CODESYS: never emit G98/G99 — those reassign canned-cycle semantics,
+            // not I/J polarity. Relative I/J is the default and must stay the default.
+            b << " I" << num(m.i) << " J" << num(m.j);
+        }
         if (m.kind == MoveKind::Feed || m.kind == MoveKind::ArcCW ||
             m.kind == MoveKind::ArcCCW) {
             // DIN 66025 F is path-units/SECOND, not mm/min.
