@@ -7,6 +7,11 @@
 # a full TargetVisu repaint to reclaim the screen. No chvt / VT switching is used
 # (proved unworkable on this single-framebuffer device — see .ai/ENGINEERING_LOG.md).
 cd /root/milcam
+# Single-instance: kill any previous MilCAM so repeated "MilCAM" button presses
+# don't stack instances (multiple painters fight over fb0, and the "CNC" exit
+# would only close one of them). The new instance is unnamed until exec below.
+killall milcam 2>/dev/null
+sleep 1
 export QT_QPA_PLATFORM_PLUGIN_PATH=/usr/lib/qt/plugins
 export QT_QPA_FONTDIR=/usr/lib/fonts
 export QT_QPA_PLATFORM=linuxfb:fb=/dev/fb0
