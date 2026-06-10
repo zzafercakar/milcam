@@ -1,5 +1,6 @@
 // milcam/core/post/codesys/CodesysPost.cpp
 #include "post/codesys/CodesysPost.h"
+#include <cstdio>    // std::snprintf (used by num()); don't rely on transitive include
 #include <sstream>
 
 namespace milcam {
