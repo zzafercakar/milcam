@@ -1,0 +1,19 @@
+<RCC>
+  <qresource prefix="/">
+    <file>style.qss</file>
+    <file>icons/brand.svg</file>
+    <file>icons/new.svg</file>
+    <file>icons/open.svg</file>
+    <file>icons/save.svg</file>
+    <file>icons/post.svg</file>
+    <file>icons/hmi.svg</file>
+    <file>icons/dxf.svg</file>
+    <file>icons/rect.svg</file>
+    <file>icons/circle.svg</file>
+    <file>icons/line.svg</file>
+    <file>icons/profile.svg</file>
+    <file>icons/pocket.svg</file>
+    <file>icons/drill.svg</file>
+    <file>icons/send.svg</file>
+  </qresource>
+</RCC>

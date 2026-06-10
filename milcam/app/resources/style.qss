@@ -1,0 +1,27 @@
+/* MilCAM light professional theme — blue accent #0F3460 */
+QMainWindow, QWidget { background: #F4F6F9; color: #1B2A4A; }
+QWidget#TopBar { background: #FFFFFF; border-bottom: 2px solid #0F3460; }
+QLabel#Brand { font-size: 20px; font-weight: bold; color: #0F3460; padding: 0 12px; }
+QToolButton {
+    background: transparent; border: none; border-radius: 8px;
+    padding: 6px 12px; min-width: 64px; min-height: 48px; color: #1B2A4A;
+}
+QToolButton:hover { background: #E3E9F2; }
+QToolButton:pressed, QToolButton:checked { background: #0F3460; color: #FFFFFF; }
+QWidget#SwitchCluster { border-left: 2px solid #D4DBE6; }
+QToolButton#HmiButton {
+    background: #0F3460; color: #FFFFFF; min-width: 110px; min-height: 52px;
+    font-weight: bold; border-radius: 10px; margin: 4px 8px;
+}
+QToolButton#HmiButton:pressed { background: #0A2547; }
+QWidget#OperationToolBar { background: #FFFFFF; border-right: 1px solid #D4DBE6; }
+QWidget#JobPanel { background: #FFFFFF; border-left: 1px solid #D4DBE6; }
+QLabel#PanelHeader { font-weight: bold; padding: 8px; background: #EAF0F8; color: #0F3460; }
+QGraphicsView#Canvas { background: #FCFCFD; border: none; }
+QWidget#StatusBar { background: #FFFFFF; border-top: 1px solid #D4DBE6; }
+QPushButton#SendButton {
+    background: #1FA65A; color: #FFFFFF; font-weight: bold;
+    min-height: 48px; min-width: 180px; border-radius: 10px; padding: 0 16px;
+}
+QPushButton#SendButton:disabled { background: #B7C3CF; color: #EEF2F6; }
+QPushButton#SendButton:pressed { background: #178A4A; }
