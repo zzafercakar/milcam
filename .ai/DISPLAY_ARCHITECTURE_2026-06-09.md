@@ -137,6 +137,22 @@ Qt'nin raster paint engine'i ile çizer. Yani FreeCAD'in 3B'sinin çökdüğü b
 donanımda, stok Qt 5.12.4 + linuxfb/xcb üzerinde **2.5B CAM sorunsuz çalışır**.
 Cihaz stok hâlinde Widgets/Quick/Svg/VirtualKeyboard + Python 3.7 taşıyor.
 
+### KARAR + son durum (2026-06-10)
+- **Mimari karar:** MilCAM = **standalone Qt 2.5B CAM** (Qt Widgets/linuxfb,
+  GL'siz). FreeCAD'in GL bağımlı 3B'si bu donanımda çalışmadığı için terk
+  edildi. CODESYS post'u DIN 66025 dialect'ine göre yeniden yazılacak
+  (bkz. araştırma raporu; mevcut `codesys_post.py` standart ISO üretiyor =
+  yanlış).
+- **Xorg DEVRE DIŞI** bırakıldı (`/etc/init.d/S40xorg` → `_S40xorg`).
+  Standalone CAM linuxfb kullanacağı için X gereksiz. Cihaz reboot edildi
+  (kullanıcı tarafından) → her şey boot-safe geri geldi, **IP değişmedi**
+  (eth1 192.168.1.123, gateway 11740 dinliyor).
+- **Boot splash kuruldu:** `/etc/init.d/S95splash` açılışta
+  `/etc/milcam-splash.raw`'ı (1024×768 BGRX, ortalanmış SMB logosu)
+  `/dev/fb0`'a basıyor → penguenler yerine SMB logosu; bir uygulama fb0'a
+  çizene dek kalır. Üretici: `scripts/make_splash.py` (gerçek logo PNG ile
+  değiştirilebilir). Şu an placeholder wordmark.
+
 ### Temizlik / geri-dönüş notları
 - `/usr` yedeği: `/root/usr-stock-backup.tgz` (cihazda).
 - dropbear yedeği: `/root/dropbear`, `/root/dropbearkey` (cihazda).

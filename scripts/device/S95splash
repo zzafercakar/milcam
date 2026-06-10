@@ -1,0 +1,15 @@
+#!/bin/sh
+# MilCAM boot splash — blit centered SMB logo to /dev/fb0.
+# Installed on the VEC-VE panel as /etc/init.d/S95splash.
+# Stays until an application (MilCAM CAM / CodeSys HMI) draws over the framebuffer.
+# The image is a pre-composed raw BGRX dump at /etc/milcam-splash.raw
+# (see scripts/make_splash.py). No image decoder needed on the device.
+SPLASH=/etc/milcam-splash.raw
+case "$1" in
+  start|"")
+    [ -f "$SPLASH" ] && cat "$SPLASH" > /dev/fb0 2>/dev/null
+    echo 0 > /sys/class/graphics/fbcon/cursor_blink 2>/dev/null
+    printf '\033[?25l' > /dev/tty1 2>/dev/null
+    ;;
+  stop) : ;;
+esac
