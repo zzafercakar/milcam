@@ -1,6 +1,8 @@
 // tests/core/test_codesys_post.cpp
 #include "check.h"
 #include "post/codesys/CodesysPost.h"
+#include <fstream>
+#include <sstream>
 using namespace milcam;
 
 TEST(post_empty_program_has_header_and_end) {
@@ -52,4 +54,23 @@ TEST(post_suppresses_repeated_modal_gcode) {
         "N20 G1 X10 Y0 Z0 F10 E500 E-500\n"
         "N30 X10 Y10 Z0 F10 E500 E-500\n"
         "N40 M30\n");
+}
+
+// Golden-file regression helper: reads a file from the golden directory
+// (path resolved at compile time via MILCAM_GOLDEN_DIR definition).
+static std::string readGolden(const std::string& name) {
+    std::ifstream f(std::string(MILCAM_GOLDEN_DIR) + "/" + name, std::ios::binary);
+    std::ostringstream ss; ss << f.rdbuf();
+    return ss.str();
+}
+
+TEST(post_golden_square_profile) {
+    Toolpath tp;
+    tp.moves.push_back({MoveKind::Rapid,  0,  0,  0, 0, 0,   0});  // rapid in
+    tp.moves.push_back({MoveKind::Feed,  20,  0,  0, 0, 0, 600});  // edge 1 +X
+    tp.moves.push_back({MoveKind::Feed,  20, 20,  0, 0, 0, 600});  // edge 2 +Y
+    tp.moves.push_back({MoveKind::Feed,   0, 20,  0, 0, 0, 600});  // edge 3 -X
+    tp.moves.push_back({MoveKind::Feed,   0,  0,  0, 0, 0, 600});  // edge 4 -Y back to start
+    PostConfig cfg; cfg.programName = "SQUARE";  // accel/decel default 500/500
+    CHECK_EQ(postCodesys(tp, cfg), readGolden("profile_square.cnc"));
 }
