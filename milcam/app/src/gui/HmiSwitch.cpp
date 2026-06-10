@@ -4,6 +4,9 @@
 #include <QHBoxLayout>
 #include <QApplication>
 #include <QIcon>
+#include <fcntl.h>
+#include <unistd.h>
+#include <vector>
 
 HmiSwitch::HmiSwitch(QWidget* parent) : QWidget(parent) {
     setObjectName("SwitchCluster");
@@ -20,8 +23,24 @@ HmiSwitch::HmiSwitch(QWidget* parent) : QWidget(parent) {
 }
 
 void HmiSwitch::returnToCnc() {
-    // Exit MilCAM so the CodeSYS HMI can reclaim the framebuffer. The CodeSYS
-    // side detects the exit and forces a full TargetVisu repaint (it does not
-    // auto-repaint on its own). CodeSYS re-launches MilCAM on demand.
+    // Clear the framebuffer to white BEFORE exiting so no MilCAM imagery is left
+    // for the CodeSYS HMI to paint over. CodeSYS only repaints its own element
+    // regions (partial), so without this its idle/background areas would still
+    // show MilCAM. The CodeSYS HMI background is light, so white blends in and
+    // the partial repaint then looks like a clean return. (Belt-and-suspenders
+    // with the CodeSYS-side full repaint — see .ai/CODESYS_RETURN_BUTTON.md.)
+    int fb = ::open("/dev/fb0", O_WRONLY);
+    if (fb >= 0) {
+        // 1024x768 x 32bpp (BGRX), stride == width*4 → one contiguous white fill.
+        std::vector<unsigned char> white(1024 * 768 * 4, 0xFF);
+        ssize_t off = 0, n = (ssize_t)white.size();
+        while (off < n) {
+            ssize_t w = ::write(fb, white.data() + off, n - off);
+            if (w <= 0) break;
+            off += w;
+        }
+        ::close(fb);
+    }
+    // Exit MilCAM; the CodeSYS side detects the exit and forces its repaint.
     QApplication::quit();
 }
