@@ -151,7 +151,8 @@ Cihaz stok hâlinde Widgets/Quick/Svg/VirtualKeyboard + Python 3.7 taşıyor.
   `/etc/milcam-splash.raw`'ı (1024×768 BGRX, ortalanmış SMB logosu)
   `/dev/fb0`'a basıyor → penguenler yerine SMB logosu; bir uygulama fb0'a
   çizene dek kalır. Üretici: `scripts/make_splash.py` (gerçek logo PNG ile
-  değiştirilebilir). Şu an placeholder wordmark.
+  değiştirilebilir). Logo: **SMB Technics** yuvarlak logosu (beyaz zemin),
+  `scripts/smb_logo.png`. Panelde fb0 capture ile doğrulandı.
 
 ### Temizlik / geri-dönüş notları
 - `/usr` yedeği: `/root/usr-stock-backup.tgz` (cihazda).
