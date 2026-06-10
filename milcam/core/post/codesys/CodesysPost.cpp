@@ -32,8 +32,24 @@ std::string postCodesys(const Toolpath& tp, const PostConfig& cfg) {
     out << "% " << cfg.programName << '\n';   // DIN 66025 mandatory header
     line("G90");                              // absolute coordinates
 
-    // (moves emitted in later tasks)
-    (void)tp;
+    for (const auto& m : tp.moves) {
+        std::ostringstream b;
+        switch (m.kind) {
+            case MoveKind::Rapid: b << "G0"; break;
+            case MoveKind::Feed:  b << "G1"; break;
+            case MoveKind::ArcCW: b << "G2"; break;
+            case MoveKind::ArcCCW:b << "G3"; break;
+        }
+        b << " X" << num(m.x) << " Y" << num(m.y) << " Z" << num(m.z);
+        if (m.kind == MoveKind::Feed || m.kind == MoveKind::ArcCW ||
+            m.kind == MoveKind::ArcCCW) {
+            // DIN 66025 F is path-units/SECOND, not mm/min.
+            b << " F" << num(m.feedMmMin / 60.0);
+            b << " E"  << num(cfg.accelMmS2);    // acceleration word
+            b << " E-" << num(cfg.decelMmS2);    // deceleration word
+        }
+        line(b.str());
+    }
 
     line("M30");                              // program end
     return out.str();
