@@ -1,16 +1,8 @@
-# MilCAM tests.
-# Python-driven: ctest invokes pytest on tests/python/.
-
-find_program(PYTEST_EXECUTABLE NAMES pytest pytest-3)
-
-if(PYTEST_EXECUTABLE)
-    add_test(NAME python_unit
-        COMMAND ${PYTEST_EXECUTABLE} -v "${CMAKE_SOURCE_DIR}/tests/python"
-        WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
-    )
-    set_tests_properties(python_unit PROPERTIES
-        ENVIRONMENT "PYTHONPATH=${CMAKE_SOURCE_DIR}/milcam/Mod/MilCAM:${CMAKE_BINARY_DIR}/milcam/CodesysBridge:$ENV{PYTHONPATH}"
-    )
-else()
-    message(STATUS "MilCAM tests: pytest not found, skipping python_unit test target.")
-endif()
+# tests/CMakeLists.txt
+add_executable(core_tests
+    core/test_main.cpp
+    core/test_codesys_post.cpp
+)
+target_link_libraries(core_tests PRIVATE milcam_core)
+target_include_directories(core_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/core)
+add_test(NAME core_tests COMMAND core_tests)
