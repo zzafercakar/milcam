@@ -24,4 +24,6 @@ inline void eq(const std::string& got, const std::string& want, const char* wher
     static void name(); \
     static t::Reg reg_##name(#name, name); \
     static void name()
-#define CHECK_EQ(got, want) t::eq((got), (want), __FILE__ ":" #got)
+#define MILCAM_STR2(x) #x
+#define MILCAM_STR(x)  MILCAM_STR2(x)
+#define CHECK_EQ(got, want) t::eq((got), (want), __FILE__ ":" MILCAM_STR(__LINE__))
