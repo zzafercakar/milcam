@@ -32,15 +32,19 @@ std::string postCodesys(const Toolpath& tp, const PostConfig& cfg) {
     out << "% " << cfg.programName << '\n';   // DIN 66025 mandatory header
     line("G90");                              // absolute coordinates
 
+    std::string lastG;  // modal tracking: suppresses repeated G tokens (DIN 66025 §4.2)
     for (const auto& m : tp.moves) {
-        std::ostringstream b;
+        std::string g;
         switch (m.kind) {
-            case MoveKind::Rapid: b << "G0"; break;
-            case MoveKind::Feed:  b << "G1"; break;
-            case MoveKind::ArcCW: b << "G2"; break;
-            case MoveKind::ArcCCW:b << "G3"; break;
+            case MoveKind::Rapid: g = "G0"; break;
+            case MoveKind::Feed:  g = "G1"; break;
+            case MoveKind::ArcCW: g = "G2"; break;
+            case MoveKind::ArcCCW:g = "G3"; break;
         }
-        b << " X" << num(m.x) << " Y" << num(m.y) << " Z" << num(m.z);
+        std::ostringstream b;
+        if (g != lastG) b << g << ' ';   // modal: emit G token only when it changes
+        lastG = g;
+        b << 'X' << num(m.x) << " Y" << num(m.y) << " Z" << num(m.z);
         if (m.kind == MoveKind::ArcCW || m.kind == MoveKind::ArcCCW) {
             // I/J are RELATIVE to the arc start (DIN 66025 default).
             // CODESYS: never emit G98/G99 — those reassign canned-cycle semantics,

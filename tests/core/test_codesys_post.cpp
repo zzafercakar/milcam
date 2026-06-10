@@ -40,3 +40,16 @@ TEST(post_arc_emits_relative_ij) {
         "N30 G3 X0 Y20 Z0 I-10 J0 F80 E500 E-500\n"
         "N40 M30\n");
 }
+
+TEST(post_suppresses_repeated_modal_gcode) {
+    Toolpath tp;
+    tp.moves.push_back({MoveKind::Feed, 10, 0, 0, 0, 0, 600});
+    tp.moves.push_back({MoveKind::Feed, 10, 10, 0, 0, 0, 600});
+    PostConfig cfg; cfg.programName = "MODAL";
+    CHECK_EQ(postCodesys(tp, cfg),
+        "% MODAL\n"
+        "N10 G90\n"
+        "N20 G1 X10 Y0 Z0 F10 E500 E-500\n"
+        "N30 X10 Y10 Z0 F10 E500 E-500\n"
+        "N40 M30\n");
+}
