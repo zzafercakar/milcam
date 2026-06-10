@@ -1,10 +1,19 @@
 project:
   name: MilCAM
-  description: Slim FreeCAD distribution for CodeSys CNC panel PCs (VEC-VE class) — FreeCAD UI used birebir, non-CAM modules compile-disabled, thin Python overlay adds CodeSys integration
-  version: 0.2.0-overlay
-  approach: "Slim FreeCAD build + Python workbench overlay + CPython binding"
-  not_an_approach: "Custom UI; new C++ application; replacement for FreeCAD"
-  origin: 2026-06-08 pivoted from initial wrong-architecture scaffold (custom QML) to overlay model
+  description: Standalone Qt Widgets 2.5D CAM for CodeSys CNC panel PCs (VEC-VE class) — linuxfb (no GL), produces CODESYS DIN 66025 G-code, drops .cnc to a folder for the running CodeSYS runtime
+  version: 0.3.0-standalone
+  approach: "Standalone Qt5 Widgets (linuxfb, raster, no GL) 2.5D CAM + GL/Qt-free C++ core (geometry/DXF/CAM/DIN66025 post)"
+  not_an_approach: "Slim FreeCAD distribution (RETIRED 2026-06-10 — device has no GLX/EGL, FreeCAD 3D viewport cannot render)"
+  origin: |
+    2026-06-08 pivoted custom-QML scaffold -> slim-FreeCAD-overlay model.
+    2026-06-10 PIVOTED AGAIN -> standalone Qt 2.5D CAM, after live device tests
+    proved FreeCAD's OCCT/Coin3D 3D viewport cannot run (no OpenGL on the panel).
+    See .ai/DISPLAY_ARCHITECTURE_2026-06-09.md and docs/superpowers/specs/2026-06-10-*.
+  active_plan: "docs/superpowers/plans/2026-06-10-milcam-v1-p0-p2.md (P2 done; P0 toolchain partly done)"
+  note: |
+    Sections below describing FreeCAD modules / overlay / BUILD_<X>=OFF are
+    RETIRED history (kept for context). milcam/Mod/MilCAM + milcam/CodesysBridge
+    stay in the tree as reference but are dropped from the build.
   sibling_projects:
     cadnc: /home/embed/Dev/CADNC/    # full custom CAD+CAM with QML UI — DIFFERENT architecture
     milcad: /home/embed/Dev/MilCAD/   # legacy reference only

@@ -1,5 +1,27 @@
 # MilCAM Workplan (revised 2026-06-09)
 
+> **2026-06-10 GÜNCELLEME — bu dosya kısmen GEÇERSİZ.** Faz 1–5 aşağıda
+> *slim-FreeCAD-overlay* modelini anlatır; o model 2026-06-10'da terk edildi
+> (cihazda GL yok → FreeCAD 3B çalışmaz). Güncel yürütülebilir plan:
+> **`docs/superpowers/plans/2026-06-10-milcam-v1-p0-p2.md`** (standalone Qt 2.5B CAM).
+>
+> **Tamamlananlar (2026-06-10):**
+> - **P2 — CODESYS DIN 66025 post:** görev 2.1–2.6 ✅ (host TDD, 5 test yeşil,
+>   subagent-driven + iki-aşamalı review + final review).
+> - **Cihaz testi:** `core_tests` aarch64'e statik cross-derlendi, VEC-VE'de
+>   `ALL PASS (5 cases)` ✅ — toolchain/glibc riski çürütüldü.
+>   ([TOOLCHAIN_NOTES.md](TOOLCHAIN_NOTES.md))
+>
+> **Sıradaki:** Phase 0.3 — "Hello MilCAM" Qt Widgets penceresi (linuxfb), ekranda
+> ilk görsel çıktı. Qt için dinamik link → VEC-VE sysroot (glibc 2.29 + Qt 5.12.4)
+> gerekir (statik core'dan farklı). Sonra P1 (DXF + canvas), P3/P4 (Profile/Pocket/Drill).
+>
+> Aşağıdaki Faz 0.x bölümleri (cihaz erişimi, dropbear, envanter) hâlâ GEÇERLİ
+> tarihsel kayıttır; Faz 1–5 (FreeCAD build/workbench) RETIRED.
+
+---
+
+
 ## Faz 0.6 — Cihaz Erisimi  ✅  (2026-06-09)
 
 **Tamamlanan:**

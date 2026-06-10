@@ -4,6 +4,42 @@ Karsilasilan teknik sorunlar, root cause, cozumler. Yeni en uste.
 
 ---
 
+## 2026-06-10 — Standalone CAM P2 (CODESYS post) + aarch64 cross-build + CİHAZ TESTİ
+
+**Olay:** Standalone Qt 2.5B CAM kararı sonrası ilk kod: Phase 2 CODESYS
+DIN 66025 post-processor'u, subagent-driven + TDD ile host'ta yazıldı; sonra
+aarch64'e cross-derlenip **gerçek cihazda** çalıştırıldı.
+
+**Yapılanlar:**
+- **P2 post (görev 2.1–2.6)** — saf C++17, Qt/GL'siz `milcam/core`. `Toolpath`
+  → DIN 66025 `.cnc`: `%` header, G90/M30, G0/G1/G2/G3, **F=mm/s** (÷60) +
+  **E/E-** ivme kelimeleri, **göreli I/J** (asla G98/G99), **modal G** bastırma,
+  golden-dosya regresyonu (`profile_square.cnc`). Her görev iki-aşamalı review'dan
+  geçti; final review `<cstdio>` IWYU eksiğini buldu, düzeltildi. 5 test yeşil.
+- **Cross-build:** `cmake/toolchain-vecve-aarch64.cmake` + `scripts/build-arm64.sh`.
+  Core'un 3rd-party bağımlılığı olmadığı için **tam statik** link → glibc 2.29
+  uyumsuzluğu baypas (sysroot gerekmedi). Detay: [TOOLCHAIN_NOTES.md](TOOLCHAIN_NOTES.md).
+
+**Engel 1 — cihazda sftp yok:** `scp` "Connection closed / sftp-server not
+found" verdi (dropbear'da sftp-server yok). **Çözüm:** binary'yi
+`ssh DEV 'cat > dosya' < yerel` ile stdin üzerinden akıt (dropbear transfer
+dersinin aynısı; base64'e bile gerek yok, ham ikili `cat` redirect yeterli).
+
+**Engel 2 — golden yolu host'a gömülü:** `MILCAM_GOLDEN_DIR` derleme-zamanı host
+mutlak yolu; cihazda o yol yok → golden boş okunur → test FAIL ederdi. **Çözüm:**
+golden-dir'i configure-zamanı override edilebilir cache var yaptım
+(`-DMILCAM_GOLDEN_DIR=/root/milcam-test/golden`), golden dosyayı o yola kopyaladım.
+
+**Sonuç (DOĞRULANDI):** cihazda (aarch64, glibc 2.29 Buildroot) `ALL PASS
+(5 cases) exit=0`. **Projenin en büyük riski (toolchain/glibc) statik-core yolu
+için çürütüldü.** Host ↔ cihaz çıktısı birebir aynı. Test artefaktı cihazda
+`/root/milcam-test/` (~2.6 MB, silinebilir).
+
+**Kalıcı önlem:** [TOOLCHAIN_NOTES.md](TOOLCHAIN_NOTES.md) (cross-build receçtesi,
+sftp-yok transfer, golden relocate, P0.3 sysroot yol haritası).
+
+---
+
 ## 2026-06-09 (gece+) — Görüntü mimarisi keşfi + FreeCAD/X canlı testi
 
 **Olay:** Cihazda "basit arayüz testi" istendi. Dropbear SSH üzerinden

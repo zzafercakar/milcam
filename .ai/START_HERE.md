@@ -11,7 +11,31 @@
 > [NETWORK_PROBE_2026-06-09.md](NETWORK_PROBE_2026-06-09.md). Bir sonraki
 > adim WORKPLAN.md "Faz 0.7 — Donanim Envanteri".
 
-## Bir Cumlede Proje
+> **2026-06-10 — BÜYÜK PİVOT + İLERLEME.** Aşağıdaki "FreeCAD'in kendisidir"
+> anlatımı ARTIK GEÇERLİ DEĞİL. Canlı cihaz testi FreeCAD 3B viewport'unun bu
+> donanımda çalışmadığını kanıtladı (GL yok). MilCAM artık **standalone Qt 2.5B
+> CAM**. Güncel gerçek: bu dosyanın "Bir Cümlede Proje (2026-06-10 güncel)"
+> bölümü + [DISPLAY_ARCHITECTURE_2026-06-09.md](DISPLAY_ARCHITECTURE_2026-06-09.md)
+> + spec/plan (`docs/superpowers/`).
+> **Durum:** P2 (CODESYS DIN 66025 post) TAMAMLANDI ve aarch64'e cross-derlenip
+> **cihazda `ALL PASS` ile doğrulandı** (statik core; [TOOLCHAIN_NOTES.md](TOOLCHAIN_NOTES.md)).
+> Sıradaki görsel adım: **Phase 0.3 "Hello MilCAM" linuxfb penceresi** (henüz
+> yok → ekranda hâlâ SMB boot logosu görünüyor; fb0'a çizen uygulama deploy
+> edilmedi).
+
+## Bir Cümlede Proje (2026-06-10 güncel)
+
+MilCAM, CodeSys CNC panel PC'leri için **standalone bir Qt Widgets 2.5B CAM**
+uygulamasıdır: linuxfb üzerinde (GL'siz, raster) çalışır, DXF + dahili şekillerden
+Profile/Pocket/Drill toolpath üretir, **CODESYS DIN 66025** `.cnc` çıkarır ve
+çalışan CodeSYS runtime'ın okuması için drop folder'a bırakır. GL/Qt'siz bir C++
+core (geometry/DXF/CAM/post) host'ta TDD ile test edilir.
+
+---
+## (RETIRED) Eski Bir Cumlede Proje — slim FreeCAD modeli
+
+> Aşağıdaki anlatım 2026-06-08–10 arası geçerliydi; 2026-06-10 pivotuyla terk
+> edildi. Sadece bağlam için tutuluyor.
 
 MilCAM, **FreeCAD'in kendisidir** — sadece CAM disindaki modullerin compile
 edilmedigi, uzerine ince bir overlay ile (i) CAM disindaki workbench'lerin
