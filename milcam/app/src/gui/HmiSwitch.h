@@ -3,15 +3,18 @@
 #include <QWidget>
 class QToolButton;
 
-// Fixed top-right switch cluster. The HMI button activates the CodeSYS VT so the
-// CodeSYS CNC HMI comes to the foreground. Return-to-MilCAM is a CodeSYS-side
-// button (chvt to MilCAM's VT) — see the design spec §5.
+// Fixed top-right switch cluster. The "CNC" button returns to the CodeSYS CNC
+// HMI. On this single-framebuffer device the visible app is simply whoever wrote
+// /dev/fb0 last, and CodeSYS does not auto-repaint, so "switching back" means
+// MilCAM EXITS (qApp->quit) and the CodeSYS side forces a full TargetVisu repaint
+// to reclaim the screen. CodeSYS re-launches MilCAM when the operator wants CAM.
+// (chvt/VT switching proved unworkable here — see .ai/ENGINEERING_LOG.md.)
 class HmiSwitch : public QWidget {
     Q_OBJECT
 public:
     explicit HmiSwitch(QWidget* parent = nullptr);
 private slots:
-    void switchToCodesys();
+    void returnToCnc();
 private:
-    QToolButton* hmiBtn_ = nullptr;
+    QToolButton* cncBtn_ = nullptr;
 };
