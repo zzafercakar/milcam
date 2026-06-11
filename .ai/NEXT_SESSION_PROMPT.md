@@ -1,4 +1,4 @@
-# MilCAM — Sonraki Session Prompt (2026-06-11, session 2 complete)
+# MilCAM — Sonraki Session Prompt (2026-06-12+)
 
 > Bu dosyayı yeni session'ın ilk mesajı olarak yapıştır.
 
@@ -7,26 +7,41 @@
 ## YAPIŞTIRILACAK PROMPT
 
 ```
-MilCAM projesine devam ediyoruz. Önce şunları oku, sonra göreve başla:
-1. CLAUDE.md, .ai/START_HERE.md, .ai/context.yaml
-2. .ai/ENGINEERING_LOG.md (en üstteki 2026-06-11 girişleri — HMI switch + graceful exit)
-3. docs/superpowers/plans/2026-06-10-milcam-ui-v2.md (P1 + P3 specs)
+MilCAM: Phase 1 (P1) DXF import + canvas başlıyoruz.
 
-GÖREV (tek odak): **P1: DXF import + canvas**
-- Geometry layer: DXF parser → LineSegment[] (koordinat, tool yok)
-- Canvas: LineSegment[] render'ı linuxfb'de (grid, scale/pan/zoom)
-- UI: "Open" butonu → dosya seç → canvas'ta görüntüle
-- Temel undo/redo
+ÖNCESİ OKU:
+1. CLAUDE.md
+2. .ai/START_HERE.md, .ai/context.yaml
+3. .ai/SESSION_2026-06-11.md (session 2 özeti: HMI switch tamamlandı)
+4. .ai/ENGINEERING_LOG.md (en üstteki giriş)
+5. docs/superpowers/plans/2026-06-11-milcam-p1-dxf-canvas.md (P1 plan — 8 task, checklist)
 
-**Tamamlanan (session 2, 2026-06-11):**
-- HMI⇄MilCAM switch = graceful, saved backdrop + SIGTERM handler
-- Round-trip test: bootstrap → clean CNC HMI → MilCAM launch → SIGTERM → clean CNC ✅
-- Git: main fae0631
+GÖREV (tek odak): **P1 — DXF import + canvas**
+Implementation plan hazır: 8 task (TDD-first)
+1. Geometry types (Point2D, LineSegment, Bounds2D)
+2. DXF parser (LINE + LWPOLYLINE, 2D)
+3. Document model + undo/redo
+4. Canvas rendering (grid + lines)
+5. File open dialog
+6. Coordinate display
+7. Keyboard shortcuts
+8. Device integration test
 
-Cihaz: ssh -i ~/.ssh/milcam_id root@192.168.1.123  (Türkçe konuş, kod İngilizce)
-Build host sysroot/toolchain: ~/milcam-sysroot/ (Bootlin glibc-2.27, qt-desktop, vec-ve, aqtenv)
-Cross-build: bash scripts/build-app-arm64.sh ; deploy: bash scripts/run-on-device.sh
-GitHub: github.com/zzafercakar/milcam (main); push key ~/.ssh/id_ed25519_zzafercakar ; git config core.sshCommand "ssh -i ~/.ssh/id_ed25519_zzafercakar"
+Tahmini: ~10 saat. Recommend: subagent-driven-development skill ile task-by-task TDD.
+
+CİHAZ: ssh -i ~/.ssh/milcam_id root@192.168.1.123
+BUILD: bash scripts/build-app-arm64.sh
+DEPLOY: bash scripts/run-on-device.sh
+GIT: main 64e7066 (tüm dokümantasyon pushed)
+GIT CONFIG: git config core.sshCommand "ssh -i ~/.ssh/id_ed25519_zzafercakar"
+
+SÖZ KONUSU ALTYAPI:
+- HMI⇄MilCAM switch: ✅ tamamlandı (graceful, saved backdrop)
+- UI v2 (CAM shell): ✅ tamamlandı
+- CODESYS post (P2): ✅ tamamlandı
+- Toolchain: ✅ setup (Bootlin glibc-2.27, aarch64)
+
+Türkçe konuş, kod İngilizce.
 ```
 
 ---

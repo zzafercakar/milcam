@@ -33,6 +33,11 @@ commit fae0631.
 **Kalıcı araç:** Yeni device üzerine setup: (a) bootstrap → capture+save cnc_bg.raw,
 (b) MilCAM deploy + SIGTERM handler. Sonra forever clean HMI/CAM geçişler.
 
+**Sonuç (session 2 tamamlandı):**
+- Commits: fae0631 (feat: graceful CNC return), 64aa5e4 (docs: handoff), 64e7066 (docs: P1 plan)
+- Cihazda verified: round-trip CNC ↔ MilCAM ↔ CNC, her defasında temiz ekran
+- P1 plan yazılmış (DXF+canvas, 8 task, ~10 saat)
+
 ---
 
 ## 2026-06-10 (gece) — HMI⇄MilCAM geçişi: chvt ÖLÜ → "başlat/çık" mimarisi
