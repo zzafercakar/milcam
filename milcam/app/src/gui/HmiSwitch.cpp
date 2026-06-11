@@ -1,5 +1,6 @@
 // milcam/app/src/gui/HmiSwitch.cpp
 #include "gui/HmiSwitch.h"
+#include "gui/CncBackdrop.h"
 #include <QToolButton>
 #include <QHBoxLayout>
 #include <QApplication>
@@ -23,24 +24,27 @@ HmiSwitch::HmiSwitch(QWidget* parent) : QWidget(parent) {
 }
 
 void HmiSwitch::returnToCnc() {
-    // Clear the framebuffer to white BEFORE exiting so no MilCAM imagery is left
-    // for the CodeSYS HMI to paint over. CodeSYS only repaints its own element
-    // regions (partial), so without this its idle/background areas would still
-    // show MilCAM. The CodeSYS HMI background is light, so white blends in and
-    // the partial repaint then looks like a clean return. (Belt-and-suspenders
-    // with the CodeSYS-side full repaint — see .ai/CODESYS_RETURN_BUTTON.md.)
+    // Restore the CNC HMI by writing the framebuffer frame captured at launch back
+    // to /dev/fb0, then exit. This returns the operator to the exact CodeSYS CNC
+    // screen that was showing before MilCAM opened — without relying on CodeSYS to
+    // repaint (which is unreliable to trigger here). CodeSYS keeps the live elements
+    // (DRO, status) updated on top afterwards. Falls back to white if no capture.
+    const std::vector<unsigned char>& bg = cncBackdrop();
     int fb = ::open("/dev/fb0", O_WRONLY);
     if (fb >= 0) {
-        // 1024x768 x 32bpp (BGRX), stride == width*4 → one contiguous white fill.
-        std::vector<unsigned char> white(1024 * 768 * 4, 0xFF);
-        ssize_t off = 0, n = (ssize_t)white.size();
+        const size_t frame = 1024u * 768u * 4u;
+        std::vector<unsigned char> white;
+        const unsigned char* data;
+        size_t n;
+        if (bg.size() == frame) { data = bg.data(); n = frame; }
+        else { white.assign(frame, 0xFF); data = white.data(); n = frame; }
+        size_t off = 0;
         while (off < n) {
-            ssize_t w = ::write(fb, white.data() + off, n - off);
+            ssize_t w = ::write(fb, data + off, n - off);
             if (w <= 0) break;
-            off += w;
+            off += (size_t)w;
         }
         ::close(fb);
     }
-    // Exit MilCAM; the CodeSYS side detects the exit and forces its repaint.
     QApplication::quit();
 }
