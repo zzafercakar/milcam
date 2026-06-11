@@ -8,6 +8,8 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <vector>
+#include <ctime>
+#include <cstdio>
 
 HmiSwitch::HmiSwitch(QWidget* parent) : QWidget(parent) {
     setObjectName("SwitchCluster");
@@ -24,6 +26,13 @@ HmiSwitch::HmiSwitch(QWidget* parent) : QWidget(parent) {
 }
 
 void HmiSwitch::returnToCnc() {
+    // Mark a cooldown so the launcher won't immediately reopen MilCAM if the
+    // CodeSYS side keeps re-firing the launch (run.sh honors this window).
+    if (FILE* f = std::fopen("/tmp/milcam_cooldown", "w")) {
+        std::fprintf(f, "%ld\n", (long)std::time(nullptr));
+        std::fclose(f);
+    }
+
     // Restore the CNC HMI by writing the framebuffer frame captured at launch back
     // to /dev/fb0, then exit. This returns the operator to the exact CodeSYS CNC
     // screen that was showing before MilCAM opened — without relying on CodeSYS to
