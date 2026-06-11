@@ -4,6 +4,37 @@ Karsilasilan teknik sorunlar, root cause, cozumler. Yeni en uste.
 
 ---
 
+## 2026-06-11 (gündüz) — HMI switch: clean graceful exit via saved backdrop
+
+**Olay:** HMI⇄MilCAM switch süreci tamamlanmıştı ama cihaza uygulandığında ekran
+bozuk kalıyordu (MilCAM çıkışta CNC HMI restore etse de bozuk frame'i restore ediyordu).
+Root cause: relaunch-kaosunun ortasında snapshot alındığından bozuk kareler cache'lenmiş.
+
+**Çözüm (iki adım):**
+1. **Bootstrap'ten temiz frame kaydet:** Cihazı restart ettikten sonra CodeSYS CNC HMI
+   tam açıldığında fb0 capture → `/root/milcam/cnc_bg.raw` (3 MB). Artık device
+   çalıştırıldığında her zaman clean HMI var.
+2. **MilCAM'i dosyadan yükle:** main.cpp'de captureCncBackdrop() → önce `/root/milcam/cnc_bg.raw`
+   yüklemeyi dene, başarısız olursa /dev/fb0 capture'a fallback. Böylece asla bozuk
+   frame'i cache lemez.
+3. **Graceful exit handler:** SIGTERM/SIGINT'i yakalaması için signal handler ekledik.
+   `killall -TERM milcam` → signal_handler sets shutdown flag → timer detects →
+   restore_cnc_and_exit() çalışır. CodeSYS'in programlı shutdown'ı da çalışır.
+
+**Test akışı (CİHAZDA VERİFİED):**
+- Restart → clean CNC HMI + boot capture + save cnc_bg.raw
+- MilCAM launch (binary deploy) → UI gösterildi
+- killall -TERM → SIGTERM handler → restore_cnc_and_exit() → clean CNC HMI
+  **perfectly restored**. Round-trip başarılı.
+
+**Code etkisi:** main.cpp (60 satır ekle: file-load logic + signal handler + timer),
+commit fae0631.
+
+**Kalıcı araç:** Yeni device üzerine setup: (a) bootstrap → capture+save cnc_bg.raw,
+(b) MilCAM deploy + SIGTERM handler. Sonra forever clean HMI/CAM geçişler.
+
+---
+
 ## 2026-06-10 (gece) — HMI⇄MilCAM geçişi: chvt ÖLÜ → "başlat/çık" mimarisi
 
 **Olay:** UI v2 (modern açık/mavi CAM kabuğu) cihazda çalıştı, ama sağ-üstteki

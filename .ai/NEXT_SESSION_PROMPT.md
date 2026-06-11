@@ -1,4 +1,4 @@
-# MilCAM — Sonraki Session Prompt (2026-06-11)
+# MilCAM — Sonraki Session Prompt (2026-06-11, session 2 complete)
 
 > Bu dosyayı yeni session'ın ilk mesajı olarak yapıştır.
 
@@ -9,21 +9,24 @@
 ```
 MilCAM projesine devam ediyoruz. Önce şunları oku, sonra göreve başla:
 1. CLAUDE.md, .ai/START_HERE.md, .ai/context.yaml
-2. .ai/ENGINEERING_LOG.md (en üstteki 2026-06-10/11 girişleri — mimari + switch)
-3. .ai/TOOLCHAIN_NOTES.md (aarch64 cross-build reçetesi)
-4. .ai/DEVICE_DEPLOY_PROCEDURE.md + .ai/CODESYS_RETURN_BUTTON.md
-5. docs/superpowers/specs/2026-06-10-milcam-ui-v2-and-hmi-switch-design.md
-6. docs/superpowers/plans/2026-06-10-milcam-ui-v2.md
+2. .ai/ENGINEERING_LOG.md (en üstteki 2026-06-11 girişleri — HMI switch + graceful exit)
+3. docs/superpowers/plans/2026-06-10-milcam-ui-v2.md (P1 + P3 specs)
 
-GÖREV (tek odak): HMI⇄MilCAM geçişini cihazda TEMİZ çalışır hale getir.
-Şu an: relaunch düzeldi, UI v2 güzel görünüyor; ama CNC'ye basınca CNC HMI
-temiz gelmiyor (snapshot bozuk kareler yakalamıştı). Aşağıdaki "Sıradaki
-adımlar"ı uygula. Sonra CAM özelliklerine geç (P1 DXF+canvas, P3 Profile).
+GÖREV (tek odak): **P1: DXF import + canvas**
+- Geometry layer: DXF parser → LineSegment[] (koordinat, tool yok)
+- Canvas: LineSegment[] render'ı linuxfb'de (grid, scale/pan/zoom)
+- UI: "Open" butonu → dosya seç → canvas'ta görüntüle
+- Temel undo/redo
+
+**Tamamlanan (session 2, 2026-06-11):**
+- HMI⇄MilCAM switch = graceful, saved backdrop + SIGTERM handler
+- Round-trip test: bootstrap → clean CNC HMI → MilCAM launch → SIGTERM → clean CNC ✅
+- Git: main fae0631
 
 Cihaz: ssh -i ~/.ssh/milcam_id root@192.168.1.123  (Türkçe konuş, kod İngilizce)
 Build host sysroot/toolchain: ~/milcam-sysroot/ (Bootlin glibc-2.27, qt-desktop, vec-ve, aqtenv)
 Cross-build: bash scripts/build-app-arm64.sh ; deploy: bash scripts/run-on-device.sh
-GitHub: github.com/zzafercakar/milcam (main); push key ~/.ssh/id_ed25519_zzafercakar
+GitHub: github.com/zzafercakar/milcam (main); push key ~/.ssh/id_ed25519_zzafercakar ; git config core.sshCommand "ssh -i ~/.ssh/id_ed25519_zzafercakar"
 ```
 
 ---
